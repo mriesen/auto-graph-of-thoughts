@@ -1,0 +1,28 @@
+image: python:latest
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip
+
+before_script:
+  - python --version
+  - pip install hatch --quiet
+
+stages:
+  - build
+  - test
+
+build:
+  stage: build
+  script: hatch build
+  artifacts:
+    paths:
+      - dist
+    expire_in: 1 week
+
+types:check:
+  stage: test
+  script: hatch run types:check
