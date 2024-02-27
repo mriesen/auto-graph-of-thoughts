@@ -47,5 +47,11 @@ packages = [
     "auto-graph-of-thoughts"
 ]
 
+[tool.mypy]
+disallow_untyped_defs = true
+warn_redundant_casts = true
+warn_no_return = true
+warn_unreachable = true
+
 [project.urls]
 Repository = "https://gitlab.ti.bfh.ch/riesm1-bathesis/auto-graph-of-thoughts.git"
