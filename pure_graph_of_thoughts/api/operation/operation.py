@@ -1,0 +1,110 @@
+from abc import ABC
+from dataclasses import dataclass, field
+from typing import Callable, List
+
+from .operation_type import OperationType
+from ..language_model import Prompt
+from ..thought import State
+from ..thought import Thought
+
+
+@dataclass(frozen=True)
+class Operation(ABC):
+    """
+    Represents an operation.
+    """
+
+    name: str
+    """The name of the operation"""
+
+    n_inputs: int
+    """The number of inputs for the operation"""
+
+    n_outputs: int
+    """The number of outputs for the operation"""
+
+    type: OperationType
+    """The type of operation"""
+
+    @property
+    def is_scorable(self) -> bool:
+        """
+        Returns whether the operation can be scored.
+        :return: scorable
+        """
+        return False
+
+
+@dataclass(frozen=True, eq=False, repr=False)
+class ScoreOperation(Operation):
+    """
+    Represents a score operation.
+    """
+    pass
+
+
+@dataclass(frozen=True, eq=False, repr=False)
+class ScoreExecOperation(ScoreOperation):
+    """
+    Represents a score execution operation.
+    The score is calculated by executing a defined score function.
+    """
+
+    score: Callable[[State, State], float]
+    """The score function."""
+
+
+@dataclass(frozen=True, eq=False, repr=False)
+class ScorePromptOperation(ScoreOperation):
+    """
+    Represents a score prompt operation.
+    The score is determined by prompting a language model.
+    """
+
+    prompt: Prompt
+    """The score prompt"""
+
+    transform_before: Callable[[State], State] = field(default=lambda state: state)
+    """The transformation function applied on the input"""
+
+    transform_after: Callable[[State], float] = field(default=lambda state: float(state['score']))
+    """The transformation function applied on the output"""
+
+
+@dataclass(frozen=True, eq=False, repr=False)
+class PromptOperation(Operation):
+    """
+    Represents a prompt operation.
+    A prompt operation is executed by prompting a language model.
+    """
+
+    prompt: Prompt
+    """The prompt"""
+
+    transform_before: Callable[[List[Thought]], Thought] = field(
+            default=lambda thoughts: thoughts[0] if thoughts else Thought()
+    )
+    """The transformation function applied on the input"""
+
+    transform_after: Callable[[Thought], List[Thought]] = field(default=lambda thought: [thought])
+    """The transformation function applied on the output"""
+
+    score_op: ScoreOperation | None = field(default=None)
+    """The score operation if scorable"""
+
+    @property
+    def is_scorable(self) -> bool:
+        """
+        Returns whether the operation can be scored.
+        :return: scorable
+        """
+        return self.score_op is not None
+
+
+@dataclass(frozen=True, eq=False, repr=False)
+class ExecOperation(Operation):
+    """
+    Represents an execution operation.
+    The execution of such operations involve the invocation of a defined function.
+    """
+    execute: Callable[[List[Thought]], List[Thought]]
