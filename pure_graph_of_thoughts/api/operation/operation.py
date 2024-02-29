@@ -89,8 +89,8 @@ class PromptOperation(Operation):
     transform_after: Callable[[Thought], List[Thought]] = field(default=lambda thought: [thought])
     """The transformation function applied on the output"""
 
-    score_op: ScoreOperation | None = field(default=None)
-    """The score operation if scorable"""
+    score_operation: ScoreOperation | None = field(default=None)
+    """The score operation if the operation is scorable"""
 
     @property
     def is_scorable(self) -> bool:
@@ -98,7 +98,7 @@ class PromptOperation(Operation):
         Returns whether the operation can be scored.
         :return: scorable
         """
-        return self.score_op is not None
+        return self.score_operation is not None
 
 
 @dataclass(frozen=True, eq=False, repr=False)
