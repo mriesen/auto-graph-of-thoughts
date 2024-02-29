@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable
 
-from ..thought import State
+from ..state import State
 from ..thought import Thought
 
 

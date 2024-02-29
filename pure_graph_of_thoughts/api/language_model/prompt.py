@@ -4,7 +4,7 @@ from textwrap import dedent
 from typing import List
 
 from .example import Example
-from ..thought import State
+from ..state import State
 
 
 @dataclass(frozen=True)

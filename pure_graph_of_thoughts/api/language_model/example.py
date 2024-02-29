@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass
 
-from ..thought import State
+from ..state import State
 
 
 @dataclass(frozen=True)

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from .prompt import Prompt
-from ..thought import State
+from ..state import State
 
 
 class LanguageModel(ABC):

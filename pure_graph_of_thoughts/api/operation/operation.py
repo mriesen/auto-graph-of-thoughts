@@ -1,11 +1,10 @@
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 from .operation_type import OperationType
 from ..language_model import Prompt
-from ..thought import State
-from ..thought import Thought
+from ..state import State
 
 
 @dataclass(frozen=True)
@@ -81,15 +80,15 @@ class PromptOperation(Operation):
     prompt: Prompt
     """The prompt"""
 
-    transform_before: Callable[[List[Thought]], Thought] = field(
-            default=lambda thoughts: thoughts[0] if thoughts else Thought()
+    transform_before: Callable[[List[State]], State] = field(
+            default=lambda states: states[0] if states else {}
     )
     """The transformation function applied on the input"""
 
-    transform_after: Callable[[Thought], List[Thought]] = field(default=lambda thought: [thought])
+    transform_after: Callable[[State], List[State]] = field(default=lambda state: [state])
     """The transformation function applied on the output"""
 
-    score_operation: ScoreOperation | None = field(default=None)
+    score_operation: Optional[ScoreOperation] = field(default=None)
     """The score operation if the operation is scorable"""
 
     @property
@@ -107,4 +106,4 @@ class ExecOperation(Operation):
     Represents an execution operation.
     The execution of such operations involve the invocation of a defined function.
     """
-    execute: Callable[[List[Thought]], List[Thought]]
+    execute: Callable[[List[State]], List[State]]
