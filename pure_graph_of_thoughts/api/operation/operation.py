@@ -30,7 +30,7 @@ class Operation(ABC):
     def is_scorable(self) -> bool:
         """
         Returns whether the operation can be scored.
-        :return: scorable
+        :return: operation is scorable
         """
         return False
 
