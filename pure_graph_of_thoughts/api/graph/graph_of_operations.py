@@ -40,12 +40,13 @@ class GraphOfOperations:
 
     @staticmethod
     def _get_nodes(current_node: Node) -> List[Node]:
-        return current_node.successors + [node for child in current_node.successors for node in
-                                          GraphOfOperations._get_nodes(child)]
+        return current_node.successors + [
+            node for successor in current_node.successors for node in
+            GraphOfOperations._get_nodes(successor)
+        ]
 
     @staticmethod
     def _get_edges(current_node: Node) -> List[Tuple[Node, Node]]:
-        return (
-                [(current_node, child) for child in current_node.successors]
-                + [edge for child in current_node.successors for edge in GraphOfOperations._get_edges(child)]
-        )
+        return [(current_node, successor) for successor in current_node.successors] + [
+            edge for successor in current_node.successors for edge in GraphOfOperations._get_edges(successor)
+        ]

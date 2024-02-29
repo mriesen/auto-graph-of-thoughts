@@ -1,6 +1,6 @@
 import itertools
 from dataclasses import dataclass, field
-from typing import List, Iterator, Self, Any
+from typing import List, Iterator, Any
 
 from ..operation import Operation
 
@@ -23,10 +23,10 @@ class Node:
     operation: Operation
     """The node's operation"""
 
-    predecessors: List[Self]
+    predecessors: List[Node]
     """The predecessors of the node"""
 
-    successors: List[Self]
+    successors: List[Node]
     """The successors of the node"""
 
     id: int = field(default_factory=next_node_id)
@@ -61,7 +61,7 @@ class Node:
         return not self.successors
 
     @classmethod
-    def of_operation(cls, operation: Operation) -> Self:
+    def of_operation(cls, operation: Operation) -> Node:
         """
         Creates a node for a given operation.
         :param operation: operation of the node
@@ -69,7 +69,7 @@ class Node:
         """
         return cls(operation=operation, predecessors=[], successors=[])
 
-    def append_operation(self, operation: Operation) -> Self:
+    def append_operation(self, operation: Operation) -> Node:
         """
         Creates a node of a given operation and appends it as successor to the current one.
         :param operation: operation to append a new node for
@@ -78,7 +78,7 @@ class Node:
         successor = self.of_operation(operation)
         return self.append(successor)
 
-    def append(self: Self, successor: Self) -> Self:
+    def append(self: Node, successor: Node) -> Node:
         """
         Appends a successor to the current node.
         :param successor: successor node to append
