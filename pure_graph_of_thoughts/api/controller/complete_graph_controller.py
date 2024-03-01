@@ -9,7 +9,7 @@ from ..language_model import LanguageModel
 from ..operation import Operation, PromptOperation, ExecOperation, ScoreOperation, ScorePromptOperation, \
     ScoreExecOperation
 from ..thought import Thought
-from pure_graph_of_thoughts.api.state.state import State
+from ..state import State
 
 
 class CompleteGraphController(Controller):

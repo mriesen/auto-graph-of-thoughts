@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Any
 
 from .prompt import Prompt
 from ..state import State
@@ -11,7 +10,7 @@ class LanguageModel(ABC):
     """
 
     @abstractmethod
-    def prompt(self, prompt: Prompt, state: State) -> Any:
+    def prompt(self, prompt: Prompt, state: State) -> State:
         """
         Processes a given prompt with a state.
         :param prompt: prompt to consume
