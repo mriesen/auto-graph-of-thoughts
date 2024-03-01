@@ -1,37 +1,43 @@
 import itertools
-from dataclasses import dataclass, field
-from typing import List, Iterator, Self
-
-from ..operation import Operation
-
-_node_id_generator: Iterator[int] = itertools.count(0)
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import List, Self, Sequence, Callable, Any
 
 
-def _next_node_id() -> int:
+def node_id_generator() -> Callable[[], int]:
     """
-    Generates the next node ID.
-    :return: next node ID
+    Creates a node ID generator.
+    :return: function that returns the next node ID
     """
-    return next(_node_id_generator)
+    id_iterator = itertools.count(0)
+    return lambda: next(id_iterator)
 
 
-@dataclass(frozen=True, eq=False)
-class Node:
+@dataclass(frozen=True)
+class Node(ABC):
     """
-    Represents a node in a graph of operations.
+    Abstract representation of a node in a graph.
     """
 
-    operation: Operation
-    """The node's operation"""
-
-    predecessors: List[Self]
+    _predecessors: List[Self]
     """The predecessors of the node"""
 
-    successors: List[Self]
+    _successors: List[Self]
     """The successors of the node"""
 
-    id: int = field(default_factory=_next_node_id)
-    """The ID of the node for unique identification"""
+    @property
+    @abstractmethod
+    def id(self) -> int:
+        """The ID of the node"""
+        pass
+
+    @property
+    def predecessors(self) -> Sequence[Self]:
+        return self._predecessors
+
+    @property
+    def successors(self) -> Sequence[Self]:
+        return self._successors
 
     @property
     def depth(self) -> int:
@@ -61,33 +67,26 @@ class Node:
         """
         return not self.successors
 
-    @classmethod
-    def of_operation(cls, operation: Operation) -> Self:
-        """
-        Creates a node for a given operation.
-        :param operation: operation of the node
-        :return: new node
-        """
-        return cls(operation=operation, predecessors=[], successors=[])
-
-    def append_operation(self, operation: Operation) -> Self:
-        """
-        Creates a node of a given operation and appends it as successor to the current one.
-        :param operation: operation to append a new node for
-        :return: new node
-        """
-        successor = self.of_operation(operation)
-        return self.append(successor)
-
     def append(self: Self, successor: Self) -> Self:
         """
         Appends a successor to the current node.
         :param successor: successor node to append
         :return: successor node
         """
-        successor.predecessors.append(self)
-        self.successors.append(successor)
+        successor._predecessors.append(self)
+        self._successors.append(successor)
         return successor
+
+    def append_all(self, successors: Sequence[Self]) -> Sequence[Self]:
+        """
+        Appends multiple successors to the current node.
+        :param successors: successor nodes to append
+        :return: successor nodes
+        """
+        return [self.append(successor) for successor in successors]
 
     def __hash__(self) -> int:
         return self.id
+
+    def __eq__(self, other: Any) -> bool:
+        return other is not None and isinstance(other, Node) and other.__hash__() == self.__hash__()

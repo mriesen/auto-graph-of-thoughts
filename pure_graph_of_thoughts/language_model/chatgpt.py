@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Self
+from typing import Self, cast
 
 import backoff
 from openai import OpenAI, RateLimitError
@@ -93,7 +93,7 @@ class ChatGPT(LanguageModel):
         )
         content = response.choices[0].message.content
         if content is not None:
-            return State(json.loads(content.strip()))
+            return cast(State, json.loads(content.strip()))
         raise LanguageModelException('Response content is None')
 
     def _add_cost(self, delta_cost: float) -> None:

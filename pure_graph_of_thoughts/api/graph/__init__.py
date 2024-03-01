@@ -1,2 +1,2 @@
-from .graph_of_operations import GraphOfOperations
+from .graph import Graph
 from .node import Node

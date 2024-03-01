@@ -4,12 +4,12 @@ from typing import Dict, List, Deque, Set, Sequence, Mapping
 
 from .controller import Controller
 from .controller_exception import ControllerException
-from ..graph import GraphOfOperations, Node
+from ..graph.operation import GraphOfOperations, OperationNode
 from ..language_model import LanguageModel
 from ..operation import Operation, PromptOperation, ExecOperation, ScoreOperation, ScorePromptOperation, \
     ScoreExecOperation
-from ..thought import Thought
 from ..state import State
+from ..thought import Thought
 
 
 class CompleteGraphController(Controller):
@@ -26,7 +26,7 @@ class CompleteGraphController(Controller):
         """
         super().__init__(language_model)
 
-    def execute_graph(self, graph: GraphOfOperations, init_state: State) -> Mapping[Node, Sequence[Thought]]:
+    def execute_graph(self, graph: GraphOfOperations, init_state: State) -> Mapping[OperationNode, Sequence[Thought]]:
         """
         Executes a graph of operations.
         Traverses the graph breadth-first and executes each node's operation.
@@ -36,37 +36,39 @@ class CompleteGraphController(Controller):
         :param init_state: initial state
         :return: all thoughts by nodes
         """
-        local_root: Node = graph.root
-        visited: Set[Node] = set()
-        queue: Deque[Node] = deque([local_root])
-        thoughts_by_node: Dict[Node, List[Thought]] = {}
-        input_thoughts_by_node: Dict[Node, List[Thought]] = {}
+        local_root: OperationNode = graph.root
+        visited: Set[OperationNode] = set()
+        queue: Deque[OperationNode] = deque([local_root])
+        thoughts_by_operation_node: Dict[OperationNode, Sequence[Thought]] = {}
+        input_thoughts_by_operation_node: Dict[OperationNode, List[Thought]] = {}
 
         while queue:
-            node: Node = queue.popleft()
-            if node not in visited:
-                self._logger.info('Traversing node %s', node.id)
+            operation_node: OperationNode = queue.popleft()
+            if operation_node not in visited:
+                self._logger.info('Traversing node %s', operation_node.id)
                 input_states = [
                     thought.state for thought in
-                    input_thoughts_by_node[node]
-                ] if node is not local_root else [init_state]
+                    input_thoughts_by_operation_node[operation_node]
+                ] if operation_node is not local_root else [init_state]
 
-                output_thoughts = self._process_operation(node.operation, node, input_states)
-                thoughts_by_node[node] = list(output_thoughts)
+                output_thoughts = self._process_operation(operation_node.operation, operation_node, input_states)
+                thoughts_by_operation_node[operation_node] = output_thoughts
 
-                successors_input_thoughts = self._prepare_input_thoughts(node.successors, output_thoughts)
-                for i, successor in enumerate(node.successors):
-                    if successor not in input_thoughts_by_node:
-                        input_thoughts_by_node[successor] = []
-                    input_thoughts_by_node[successor].extend(successors_input_thoughts[i])
+                successors_input_thoughts = self._prepare_input_thoughts(operation_node.successors, output_thoughts)
+                for i, successor in enumerate(operation_node.successors):
+                    if successor not in input_thoughts_by_operation_node:
+                        input_thoughts_by_operation_node[successor] = []
+                    input_thoughts_by_operation_node[successor].extend(successors_input_thoughts[i])
 
-                visited.add(node)
+                visited.add(operation_node)
 
-            queue.extend([successor for successor in node.successors if successor not in visited])
+            queue.extend([successor for successor in operation_node.successors if successor not in visited])
 
-        return thoughts_by_node
+        return thoughts_by_operation_node
 
-    def _process_operation(self, operation: Operation, node: Node, input_states: Sequence[State]) -> Sequence[Thought]:
+    def _process_operation(
+            self, operation: Operation, node: OperationNode, input_states: Sequence[State]
+    ) -> Sequence[Thought]:
         self._logger.info('Processing operation %s', operation)
 
         if isinstance(operation, PromptOperation):
@@ -75,8 +77,8 @@ class CompleteGraphController(Controller):
             output_states = operation.transform_after(output_state)
             if operation.is_scorable and operation.score_operation is not None:
                 return [
-                    self._process_score_operation(operation.score_operation, node, input_state, output_state) for
-                    output_state in output_states
+                    self._process_score_operation(operation.score_operation, node, input_state, output_state)
+                    for output_state in output_states
                 ]
             return [Thought(state=output_state, origin=node) for output_state in output_states]
         elif isinstance(operation, ExecOperation):
@@ -85,7 +87,7 @@ class CompleteGraphController(Controller):
         raise ControllerException(f'Operation is not supported: {type(operation)}')
 
     def _process_score_operation(
-            self, score_operation: ScoreOperation, node: Node, previous_state: State, current_state: State
+            self, score_operation: ScoreOperation, node: OperationNode, previous_state: State, current_state: State
     ) -> Thought:
         self._logger.debug('Processing score operation %s', score_operation)
         if isinstance(score_operation, ScorePromptOperation):
@@ -99,13 +101,9 @@ class CompleteGraphController(Controller):
         raise ControllerException(f'Score operation is not supported: {type(score_operation)}')
 
     @staticmethod
-    def _get_thoughts_of_nodes(nodes: List[Node], thoughts_by_node: Dict[Node, List[Thought]]) -> List[Thought]:
-        thoughts_of_nodes = [thought for node in nodes if node in thoughts_by_node for thought in
-                             thoughts_by_node[node]]
-        return thoughts_of_nodes
-
-    @staticmethod
-    def _prepare_input_thoughts(nodes: Sequence[Node], thoughts: Sequence[Thought]) -> Sequence[Sequence[Thought]]:
+    def _prepare_input_thoughts(
+            nodes: Sequence[OperationNode], thoughts: Sequence[Thought]
+    ) -> Sequence[Sequence[Thought]]:
         n_inputs = [node.operation.n_inputs for node in nodes]
         thoughts_iterator = iter(thoughts)
         return [list(islice(thoughts_iterator, n_input)) for n_input in n_inputs]
