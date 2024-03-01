@@ -1,10 +1,11 @@
 from collections import deque
 from itertools import islice
-from typing import Dict, List, Deque, Set, Sequence, Mapping
+from typing import Dict, List, Deque, Set, Sequence
 
 from .controller import Controller
 from .controller_exception import ControllerException
 from ..graph.operation import GraphOfOperations, OperationNode
+from ..graph.thought import ThoughtNode, GraphOfThoughts
 from ..language_model import LanguageModel
 from ..operation import Operation, PromptOperation, ExecOperation, ScoreOperation, ScorePromptOperation, \
     ScoreExecOperation
@@ -26,7 +27,7 @@ class CompleteGraphController(Controller):
         """
         super().__init__(language_model)
 
-    def execute_graph(self, graph: GraphOfOperations, init_state: State) -> Mapping[OperationNode, Sequence[Thought]]:
+    def execute_graph(self, graph: GraphOfOperations, init_state: State) -> GraphOfThoughts:
         """
         Executes a graph of operations.
         Traverses the graph breadth-first and executes each node's operation.
@@ -39,8 +40,11 @@ class CompleteGraphController(Controller):
         local_root: OperationNode = graph.root
         visited: Set[OperationNode] = set()
         queue: Deque[OperationNode] = deque([local_root])
-        thoughts_by_operation_node: Dict[OperationNode, Sequence[Thought]] = {}
         input_thoughts_by_operation_node: Dict[OperationNode, List[Thought]] = {}
+        thought_nodes_by_operation_node: Dict[OperationNode, List[ThoughtNode]] = {}
+        graph_of_thoughts: GraphOfThoughts = GraphOfThoughts.from_root(
+                ThoughtNode.of(Thought(state=init_state))
+        )
 
         while queue:
             operation_node: OperationNode = queue.popleft()
@@ -52,7 +56,19 @@ class CompleteGraphController(Controller):
                 ] if operation_node is not local_root else [init_state]
 
                 output_thoughts = self._process_operation(operation_node.operation, operation_node, input_states)
-                thoughts_by_operation_node[operation_node] = output_thoughts
+
+                thought_node_predecessors = [
+                    thought_node_predecessor for operation_node_predecessor in operation_node.predecessors
+                    for thought_node_predecessor in thought_nodes_by_operation_node[
+                        operation_node_predecessor
+                    ]
+                ] if operation_node is not local_root else [graph_of_thoughts.root]
+                thought_nodes = [
+                    ThoughtNode.of(thought) for thought in output_thoughts
+                ]
+                for thought_node_predecessor in thought_node_predecessors:
+                    thought_node_predecessor.append_all(thought_nodes)
+                thought_nodes_by_operation_node[operation_node] = thought_nodes
 
                 successors_input_thoughts = self._prepare_input_thoughts(operation_node.successors, output_thoughts)
                 for i, successor in enumerate(operation_node.successors):
@@ -64,7 +80,7 @@ class CompleteGraphController(Controller):
 
             queue.extend([successor for successor in operation_node.successors if successor not in visited])
 
-        return thoughts_by_operation_node
+        return graph_of_thoughts
 
     def _process_operation(
             self, operation: Operation, node: OperationNode, input_states: Sequence[State]
