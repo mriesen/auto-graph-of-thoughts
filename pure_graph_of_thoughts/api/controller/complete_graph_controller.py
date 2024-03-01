@@ -1,6 +1,6 @@
 from collections import deque
 from itertools import islice
-from typing import Dict, List, Deque, Set
+from typing import Dict, List, Deque, Set, Sequence, Mapping
 
 from .controller import Controller
 from .controller_exception import ControllerException
@@ -26,7 +26,7 @@ class CompleteGraphController(Controller):
         """
         super().__init__(language_model)
 
-    def execute_graph(self, graph: GraphOfOperations, init_state: State) -> Dict[Node, List[Thought]]:
+    def execute_graph(self, graph: GraphOfOperations, init_state: State) -> Mapping[Node, Sequence[Thought]]:
         """
         Executes a graph of operations.
         Traverses the graph breadth-first and executes each node's operation.
@@ -38,7 +38,7 @@ class CompleteGraphController(Controller):
         """
         local_root: Node = graph.root
         visited: Set[Node] = set()
-        queue: Deque = deque([local_root])
+        queue: Deque[Node] = deque([local_root])
         thoughts_by_node: Dict[Node, List[Thought]] = {}
         input_thoughts_by_node: Dict[Node, List[Thought]] = {}
 
@@ -52,7 +52,7 @@ class CompleteGraphController(Controller):
                 ] if node is not local_root else [init_state]
 
                 output_thoughts = self._process_operation(node.operation, node, input_states)
-                thoughts_by_node[node] = output_thoughts
+                thoughts_by_node[node] = list(output_thoughts)
 
                 successors_input_thoughts = self._prepare_input_thoughts(node.successors, output_thoughts)
                 for i, successor in enumerate(node.successors):
@@ -66,7 +66,7 @@ class CompleteGraphController(Controller):
 
         return thoughts_by_node
 
-    def _process_operation(self, operation: Operation, node: Node, input_states: List[State]) -> List[Thought]:
+    def _process_operation(self, operation: Operation, node: Node, input_states: Sequence[State]) -> Sequence[Thought]:
         self._logger.info('Processing operation %s', operation)
 
         if isinstance(operation, PromptOperation):
@@ -105,7 +105,7 @@ class CompleteGraphController(Controller):
         return thoughts_of_nodes
 
     @staticmethod
-    def _prepare_input_thoughts(nodes: List[Node], thoughts: List[Thought]) -> List[List[Thought]]:
+    def _prepare_input_thoughts(nodes: Sequence[Node], thoughts: Sequence[Thought]) -> Sequence[Sequence[Thought]]:
         n_inputs = [node.operation.n_inputs for node in nodes]
         thoughts_iterator = iter(thoughts)
         return [list(islice(thoughts_iterator, n_input)) for n_input in n_inputs]

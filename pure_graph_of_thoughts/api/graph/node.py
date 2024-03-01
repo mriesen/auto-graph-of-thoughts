@@ -1,12 +1,13 @@
 import itertools
 from dataclasses import dataclass, field
-from typing import List, Iterator, Any
+from typing import List, Iterator, Self
 
 from ..operation import Operation
 
 _node_id_generator: Iterator[int] = itertools.count(0)
 
-def next_node_id() -> int:
+
+def _next_node_id() -> int:
     """
     Generates the next node ID.
     :return: next node ID
@@ -14,7 +15,7 @@ def next_node_id() -> int:
     return next(_node_id_generator)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class Node:
     """
     Represents a node in a graph of operations.
@@ -23,13 +24,13 @@ class Node:
     operation: Operation
     """The node's operation"""
 
-    predecessors: List[Node]
+    predecessors: List[Self]
     """The predecessors of the node"""
 
-    successors: List[Node]
+    successors: List[Self]
     """The successors of the node"""
 
-    id: int = field(default_factory=next_node_id)
+    id: int = field(default_factory=_next_node_id)
     """The ID of the node for unique identification"""
 
     @property
@@ -61,7 +62,7 @@ class Node:
         return not self.successors
 
     @classmethod
-    def of_operation(cls, operation: Operation) -> Node:
+    def of_operation(cls, operation: Operation) -> Self:
         """
         Creates a node for a given operation.
         :param operation: operation of the node
@@ -69,7 +70,7 @@ class Node:
         """
         return cls(operation=operation, predecessors=[], successors=[])
 
-    def append_operation(self, operation: Operation) -> Node:
+    def append_operation(self, operation: Operation) -> Self:
         """
         Creates a node of a given operation and appends it as successor to the current one.
         :param operation: operation to append a new node for
@@ -78,7 +79,7 @@ class Node:
         successor = self.of_operation(operation)
         return self.append(successor)
 
-    def append(self: Node, successor: Node) -> Node:
+    def append(self: Self, successor: Self) -> Self:
         """
         Appends a successor to the current node.
         :param successor: successor node to append
@@ -90,8 +91,3 @@ class Node:
 
     def __hash__(self) -> int:
         return self.id
-
-    def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, self.__class__):
-            return False
-        return self.__hash__() == other.__hash__()

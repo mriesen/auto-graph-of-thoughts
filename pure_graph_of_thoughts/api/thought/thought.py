@@ -14,7 +14,7 @@ class Thought:
     origin: Optional[Node] = field(default=None)
     """The origin of the thought"""
 
-    state: State = field(default_factory=lambda: {})
+    state: State = field(default_factory=lambda: State())
     """The internal state of the thought"""
 
     score: Optional[float] = field(default=None)
