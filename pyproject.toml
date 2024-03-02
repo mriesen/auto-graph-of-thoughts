@@ -29,6 +29,16 @@ classifiers = [
     "Programming Language :: Python :: 3.12"
 ]
 
+[project.optional-dependencies]
+visualization = [
+    "matplotlib>=3.8.3,<4.0.0",
+    "networkx>=3.2.1,<4.0.0",
+    "types-networkx>=3.2.1,<4.0.0"
+]
+visualization-dot = [
+    "pygraphviz>=1.12,<2.0"
+]
+
 [tool.hatch.version]
 path = "__about__.py"
 
@@ -40,6 +50,10 @@ auto_graph_of_thoughts = ["auto_graph_of_thoughts"]
 dependencies = [
     "mypy>=1.8.0,<2.0.0"
 ]
+features = [
+    "visualization"
+]
+
 [tool.hatch.envs.types.scripts]
 check = "mypy --install-types --non-interactive {args:pure_graph_of_thoughts auto_graph_of_thoughts}"
 
