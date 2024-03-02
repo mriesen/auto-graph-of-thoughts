@@ -27,21 +27,19 @@ class CompleteGraphController(Controller):
         """
         super().__init__(language_model)
 
-    def execute_graph(self, graph: GraphOfOperations, init_state: State) -> GraphOfThoughts:
+    def execute_graph(self, graph_of_operations: GraphOfOperations, init_state: State) -> GraphOfThoughts:
         """
         Executes a graph of operations.
         Traverses the graph breadth-first and executes each node's operation.
         If applicable, the scoring operation is performed afterward.
 
-        :param graph: graph of operations
+        :param graph_of_operations: graph of operations
         :param init_state: initial state
         :return: all thoughts by nodes
         """
-        local_root: OperationNode = graph.root
         visited: Set[OperationNode] = set()
-        queue: Deque[OperationNode] = deque([local_root])
-        input_thoughts_by_operation_node: Dict[OperationNode, List[Thought]] = {}
-        thought_nodes_by_operation_node: Dict[OperationNode, List[ThoughtNode]] = {}
+        queue: Deque[OperationNode] = deque([graph_of_operations.root])
+        input_thought_nodes_by_operation_node: Dict[OperationNode, List[ThoughtNode]] = {}
         graph_of_thoughts: GraphOfThoughts = GraphOfThoughts.from_root(
                 ThoughtNode.of(Thought(state=init_state))
         )
@@ -50,37 +48,59 @@ class CompleteGraphController(Controller):
             operation_node: OperationNode = queue.popleft()
             if operation_node not in visited:
                 self._logger.info('Traversing node %s', operation_node.id)
-                input_states = [
-                    thought.state for thought in
-                    input_thoughts_by_operation_node[operation_node]
-                ] if operation_node is not local_root else [init_state]
 
-                output_thoughts = self._process_operation(operation_node.operation, operation_node, input_states)
-
-                thought_node_predecessors = [
-                    thought_node_predecessor for operation_node_predecessor in operation_node.predecessors
-                    for thought_node_predecessor in thought_nodes_by_operation_node[
-                        operation_node_predecessor
-                    ]
-                ] if operation_node is not local_root else [graph_of_thoughts.root]
-                thought_nodes = [
-                    ThoughtNode.of(thought) for thought in output_thoughts
-                ]
-                for thought_node_predecessor in thought_node_predecessors:
-                    thought_node_predecessor.append_all(thought_nodes)
-                thought_nodes_by_operation_node[operation_node] = thought_nodes
-
-                successors_input_thoughts = self._prepare_input_thoughts(operation_node.successors, output_thoughts)
-                for i, successor in enumerate(operation_node.successors):
-                    if successor not in input_thoughts_by_operation_node:
-                        input_thoughts_by_operation_node[successor] = []
-                    input_thoughts_by_operation_node[successor].extend(successors_input_thoughts[i])
+                self._process_operation_node(
+                        graph_of_operations,
+                        graph_of_thoughts,
+                        operation_node,
+                        init_state,
+                        input_thought_nodes_by_operation_node
+                )
 
                 visited.add(operation_node)
 
             queue.extend([successor for successor in operation_node.successors if successor not in visited])
 
         return graph_of_thoughts
+
+    def _process_operation_node(
+            self,
+            graph_of_operations: GraphOfOperations,
+            graph_of_thoughts: GraphOfThoughts,
+            operation_node: OperationNode,
+            init_state: State,
+            input_thought_nodes_by_operation_node: Dict[OperationNode, List[ThoughtNode]]
+    ) -> None:
+        input_thought_nodes = input_thought_nodes_by_operation_node[
+            operation_node
+        ] if operation_node is not graph_of_operations.root else [graph_of_thoughts.root]
+        input_thoughts = [
+            thought_node.thought for thought_node in input_thought_nodes
+        ]
+        input_states = [
+            thought.state for thought in input_thoughts
+        ] if operation_node is not graph_of_operations.root else [init_state]
+
+        output_thoughts = self._process_operation(operation_node.operation, operation_node, input_states)
+
+        successors_input_thoughts = self._create_input_thoughts_buckets(
+                operation_node.successors, output_thoughts
+        )
+        for i, successor in enumerate(operation_node.successors):
+            if successor not in input_thought_nodes_by_operation_node:
+                input_thought_nodes_by_operation_node[successor] = []
+            successor_input_thought_nodes = [
+                ThoughtNode.of(thought=thought) for thought in successors_input_thoughts[i]
+            ]
+            for input_thought_node in input_thought_nodes:
+                input_thought_node.append_all(successor_input_thought_nodes)
+            input_thought_nodes_by_operation_node[successor].extend(successor_input_thought_nodes)
+
+        if operation_node.is_leaf:
+            for input_thought_node in input_thought_nodes:
+                input_thought_node.append_all([
+                    ThoughtNode.of(thought=thought) for thought in output_thoughts
+                ])
 
     def _process_operation(
             self, operation: Operation, node: OperationNode, input_states: Sequence[State]
@@ -117,7 +137,7 @@ class CompleteGraphController(Controller):
         raise ControllerException(f'Score operation is not supported: {type(score_operation)}')
 
     @staticmethod
-    def _prepare_input_thoughts(
+    def _create_input_thoughts_buckets(
             nodes: Sequence[OperationNode], thoughts: Sequence[Thought]
     ) -> Sequence[Sequence[Thought]]:
         n_inputs = [node.operation.n_inputs for node in nodes]
