@@ -1,6 +1,6 @@
 from collections import deque
 from itertools import islice
-from typing import Dict, List, Deque, Set, Sequence
+from typing import Dict, List, Deque, Set, Sequence, Generator, Tuple
 
 from .controller import Controller
 from .controller_exception import ControllerException
@@ -49,13 +49,22 @@ class CompleteGraphController(Controller):
             if operation_node not in visited:
                 self._logger.info('Traversing node %s', operation_node.id)
 
-                self._process_operation_node(
-                        graph_of_operations,
-                        graph_of_thoughts,
+                operation_root_node = graph_of_operations.root
+                thought_root_node = graph_of_thoughts.root
+
+                input_thought_nodes = input_thought_nodes_by_operation_node[
+                    operation_node
+                ] if operation_node is not operation_root_node else [thought_root_node]
+
+                input_thought_nodes_by_successor_operation_node = self._process_operation_node(
                         operation_node,
-                        init_state,
-                        input_thought_nodes_by_operation_node
+                        input_thought_nodes
                 )
+
+                for successor, successor_input_thought_nodes in input_thought_nodes_by_successor_operation_node:
+                    if successor not in input_thought_nodes_by_operation_node:
+                        input_thought_nodes_by_operation_node[successor] = []
+                    input_thought_nodes_by_operation_node[successor].extend(successor_input_thought_nodes)
 
                 visited.add(operation_node)
 
@@ -65,42 +74,32 @@ class CompleteGraphController(Controller):
 
     def _process_operation_node(
             self,
-            graph_of_operations: GraphOfOperations,
-            graph_of_thoughts: GraphOfThoughts,
             operation_node: OperationNode,
-            init_state: State,
-            input_thought_nodes_by_operation_node: Dict[OperationNode, List[ThoughtNode]]
-    ) -> None:
-        input_thought_nodes = input_thought_nodes_by_operation_node[
-            operation_node
-        ] if operation_node is not graph_of_operations.root else [graph_of_thoughts.root]
+            input_thought_nodes: Sequence[ThoughtNode]
+    ) -> Sequence[Tuple[OperationNode, Sequence[ThoughtNode]]]:
+
         input_thoughts = [
             thought_node.thought for thought_node in input_thought_nodes
         ]
         input_states = [
             thought.state for thought in input_thoughts
-        ] if operation_node is not graph_of_operations.root else [init_state]
+        ]
 
         output_thoughts = self._process_operation(operation_node.operation, operation_node, input_states)
+        output_thought_nodes = [
+            ThoughtNode.of(thought=thought) for thought in output_thoughts
+        ]
+
+        for input_thought_node in input_thought_nodes:
+            input_thought_node.append_all(output_thought_nodes)
 
         successors_input_thoughts = self._create_input_thoughts_buckets(
-                operation_node.successors, output_thoughts
+                operation_node.successors, output_thought_nodes
         )
-        for i, successor in enumerate(operation_node.successors):
-            if successor not in input_thought_nodes_by_operation_node:
-                input_thought_nodes_by_operation_node[successor] = []
-            successor_input_thought_nodes = [
-                ThoughtNode.of(thought=thought) for thought in successors_input_thoughts[i]
-            ]
-            for input_thought_node in input_thought_nodes:
-                input_thought_node.append_all(successor_input_thought_nodes)
-            input_thought_nodes_by_operation_node[successor].extend(successor_input_thought_nodes)
 
-        if operation_node.is_leaf:
-            for input_thought_node in input_thought_nodes:
-                input_thought_node.append_all([
-                    ThoughtNode.of(thought=thought) for thought in output_thoughts
-                ])
+        return [
+            (successor, successors_input_thoughts[i]) for i, successor in enumerate(operation_node.successors)
+        ]
 
     def _process_operation(
             self, operation: Operation, node: OperationNode, input_states: Sequence[State]
@@ -138,8 +137,8 @@ class CompleteGraphController(Controller):
 
     @staticmethod
     def _create_input_thoughts_buckets(
-            nodes: Sequence[OperationNode], thoughts: Sequence[Thought]
-    ) -> Sequence[Sequence[Thought]]:
+            nodes: Sequence[OperationNode], thoughts: Sequence[ThoughtNode]
+    ) -> Sequence[Sequence[ThoughtNode]]:
         n_inputs = [node.operation.n_inputs for node in nodes]
         thoughts_iterator = iter(thoughts)
         return [list(islice(thoughts_iterator, n_input)) for n_input in n_inputs]
