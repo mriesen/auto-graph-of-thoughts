@@ -1,4 +1,4 @@
-from typing import Optional, Dict, List, Sequence, Tuple
+from typing import Optional, Dict, List, Sequence, Tuple, Callable
 
 from ..graph.operation import GraphOfOperations, OperationNode
 from ..graph.thought import GraphOfThoughts, ThoughtNode
@@ -50,12 +50,17 @@ class GraphOfOperationsExecution:
         """
         self._operation_cursor = operation_node
 
-    @property
-    def current_input_thought_nodes(self) -> Sequence[ThoughtNode]:
-        """The input thought nodes for the current operation node"""
-        return self._input_thought_nodes_by_operation_node[self._operation_cursor]
+    def get_input_thought_nodes(self, operation_node: OperationNode) -> Sequence[ThoughtNode]:
+        """
+        Returns the input thought nodes for the given operation node.
+        :param operation_node: operation node to get input thought nodes for
+        :return: input thought nodes for operation node
+        """
+        return self._input_thought_nodes_by_operation_node[
+            operation_node
+        ] if operation_node in self._input_thought_nodes_by_operation_node else []
 
-    def update_input_thoughts(
+    def _update_input_thoughts(
             self,
             input_thought_nodes_by_operation_node: Sequence[Tuple[OperationNode, Sequence[ThoughtNode]]]
     ) -> None:
@@ -67,3 +72,24 @@ class GraphOfOperationsExecution:
             if operation_node not in self._input_thought_nodes_by_operation_node:
                 self._input_thought_nodes_by_operation_node[operation_node] = []
             self._input_thought_nodes_by_operation_node[operation_node].extend(input_thought_nodes)
+
+    def process_operation(
+            self,
+            operation_node: OperationNode,
+            process: Callable[
+                [OperationNode, Sequence[ThoughtNode]],
+                Sequence[Tuple[OperationNode, Sequence[ThoughtNode]]]
+            ]
+    ) -> None:
+        """
+        Processes the given operation node.
+        :param operation_node: the operation node to process
+        :param process: the processing function to apply
+        """
+        self.operation_cursor = operation_node
+        input_thought_nodes = self.get_input_thought_nodes(operation_node)
+        input_thought_nodes_by_successor_operation_node = process(
+                operation_node,
+                input_thought_nodes
+        )
+        self._update_input_thoughts(input_thought_nodes_by_successor_operation_node)

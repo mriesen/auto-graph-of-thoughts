@@ -11,7 +11,7 @@ from ..state import State
 
 class CompleteGraphController(Controller):
     """
-    Represents a controller for executing a complete graph of operations.
+    A controller for executing a complete graph of operations.
     The controller traverses a given graph of operations with a breadth-first approach
     and executes all operations in order.
     """
@@ -43,16 +43,7 @@ class CompleteGraphController(Controller):
             if operation_node not in visited:
                 self._logger.info('Traversing node %s', operation_node.id)
 
-                execution.operation_cursor = operation_node
-
-                input_thought_nodes = execution.current_input_thought_nodes
-
-                input_thought_nodes_by_successor_operation_node = self._process_operation_node(
-                        operation_node,
-                        input_thought_nodes
-                )
-
-                execution.update_input_thoughts(input_thought_nodes_by_successor_operation_node)
+                execution.process_operation(operation_node, self._process_operation_node)
 
                 visited.add(operation_node)
 
