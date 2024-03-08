@@ -7,5 +7,5 @@ from .operation import (
     ScorePromptOperation,
     ScoreExecOperation
 )
-from .operation_registry import OperationRegistry
+from .operation_registry import InvertedOperationIndex, OperationRegistry
 from .operation_type import OperationType
