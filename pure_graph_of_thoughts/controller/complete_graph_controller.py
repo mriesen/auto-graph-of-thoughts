@@ -1,12 +1,12 @@
 from collections import deque
 from typing import Deque, Set
 
-from .controller import Controller
-from .graph_of_operations_execution import GraphOfOperationsExecution
-from ..graph.operation import GraphOfOperations, OperationNode
-from ..graph.thought import GraphOfThoughts
-from ..language_model import LanguageModel
-from ..state import State
+from ..api.controller.controller import Controller
+from ..api.controller.graph_of_operations_execution import GraphOfOperationsExecution
+from ..api.graph.operation import GraphOfOperations, OperationNode
+from ..api.graph.thought import GraphOfThoughts
+from ..api.language_model import LanguageModel
+from ..api.state import State
 
 
 class CompleteGraphController(Controller):

@@ -1,6 +1,6 @@
-from ..controller import Controller
-from ..controller.graph_of_operations_execution import GraphOfOperationsExecution
-from ..graph.operation import OperationNode
+from ..api.controller import Controller
+from ..api.controller.graph_of_operations_execution import GraphOfOperationsExecution
+from ..api.graph.operation import OperationNode
 
 
 class IterativeGraphController(Controller):
