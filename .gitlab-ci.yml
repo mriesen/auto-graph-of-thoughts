@@ -14,6 +14,7 @@ before_script:
 stages:
   - build
   - test
+  - publish
 
 build:
   stage: build
@@ -23,6 +24,15 @@ build:
       - dist
     expire_in: 1 week
 
-types:check:
+check types:
   stage: test
   script: hatch run types:check
+
+publish:
+  stage: publish
+  dependencies:
+    - build
+  script: hatch publish
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
