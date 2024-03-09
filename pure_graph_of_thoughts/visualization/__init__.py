@@ -1,5 +1,5 @@
 try:
-    from .graph_visualizer import plot_graph
+    from .plot_graph import plot_graph
 except ImportError:
     raise ImportError(
             'The visualisation module requires the optional visualization dependencies. '
