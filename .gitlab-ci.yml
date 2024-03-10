@@ -35,4 +35,3 @@ publish:
   script: hatch publish
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
-      when: manual

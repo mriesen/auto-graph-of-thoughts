@@ -19,6 +19,7 @@ maintainers = [
 ]
 description = "Automated Graph of Thoughts"
 readme = "README.md"
+license-files = { paths = ["LICENSE"] }
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
 
@@ -57,10 +58,19 @@ features = [
 [tool.hatch.envs.types.scripts]
 check = "mypy --install-types --non-interactive {args:pure_graph_of_thoughts auto_graph_of_thoughts}"
 
+[tool.hatch.build.targets.sdist]
+exclude = [
+    ".gitlab-ci.yml",
+    ".idea/"
+]
+
 [tool.hatch.build.targets.wheel]
 packages = [
     "pure_graph_of_thoughts",
     "auto-graph-of-thoughts"
+]
+exclude = [
+    "pure_graph_of_thoughts/examples/"
 ]
 
 [tool.mypy]
