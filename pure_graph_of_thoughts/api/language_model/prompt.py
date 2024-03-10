@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass, field
 from textwrap import dedent
-from typing import List
+from typing import Sequence
 
 from .example import Example
 from ..state import State
@@ -18,7 +18,7 @@ class Prompt:
     instruction: str
     """The primary instruction"""
 
-    examples: List[Example] = field(default_factory=lambda: [])
+    examples: Sequence[Example] = field(default_factory=lambda: [])
     """The examples to provide to the language model for in-context learning"""
 
     def __post_init__(self) -> None:
@@ -42,3 +42,6 @@ class Prompt:
         :return: prompt as string
         """
         return '{prompt}\nInput: {state}'.format(prompt=self.__str__(), state=json.dumps(input_state))
+
+    def __hash__(self) -> int:
+        return hash((self.__str__()))
