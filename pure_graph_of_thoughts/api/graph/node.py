@@ -86,7 +86,7 @@ class Node(ABC):
         return [self.append(successor) for successor in successors]
 
     def __hash__(self) -> int:
-        return self.id
+        return hash((self.__class__.__name__, self.id))
 
     def __eq__(self, other: Any) -> bool:
         return other is not None and isinstance(other, Node) and other.__hash__() == self.__hash__()
