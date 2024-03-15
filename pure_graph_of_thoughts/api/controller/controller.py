@@ -1,7 +1,6 @@
 import logging
 from abc import ABC
-from itertools import islice
-from typing import Sequence, Tuple
+from typing import Sequence
 
 from .controller_exception import ControllerException
 from ..graph.operation import OperationNode
@@ -33,7 +32,7 @@ class Controller(ABC):
             self,
             operation_node: OperationNode,
             input_thought_nodes: Sequence[ThoughtNode]
-    ) -> Sequence[Tuple[OperationNode, Sequence[ThoughtNode]]]:
+    ) -> Sequence[ThoughtNode]:
         """
         Processes an operation node with given input thought nodes.
         :param operation_node: operation node to process
@@ -49,19 +48,8 @@ class Controller(ABC):
         ]
 
         output_thoughts = self._process_operation(operation_node, input_states)
-        output_thought_nodes = [
-            ThoughtNode.of(thought=thought) for thought in output_thoughts
-        ]
-
-        for input_thought_node in input_thought_nodes:
-            input_thought_node.append_all(output_thought_nodes)
-
-        successors_input_thoughts = self._create_input_thoughts_buckets(
-                operation_node.successors, output_thought_nodes
-        )
-
         return [
-            (successor, successors_input_thoughts[i]) for i, successor in enumerate(operation_node.successors)
+            ThoughtNode.of(thought=thought) for thought in output_thoughts
         ]
 
     def _process_operation(
@@ -116,22 +104,3 @@ class Controller(ABC):
             score = score_operation.score(previous_state, current_state)
             return Thought(state=current_state, score=score, origin=operation_node)
         raise ControllerException(f'Score operation is not supported: {type(score_operation)}')
-
-    @staticmethod
-    def _create_input_thoughts_buckets(
-            operation_nodes: Sequence[OperationNode], thoughts: Sequence[ThoughtNode]
-    ) -> Sequence[Sequence[ThoughtNode]]:
-        """
-        Creates buckets of input thoughts for each operation node.
-        Given a sequence of operation nodes and thoughts, the thoughts are filled into buckets
-        of the size of the operation's number of inputs.
-        Each subsequence represents the input thoughts for the operation of the node at the corresponding position
-        in the given sequence of operation nodes.
-
-        :param operation_nodes: operation nodes
-        :param thoughts: thoughts to fill into buckets as input
-        :return: buckets of input thoughts
-        """
-        n_inputs = [node.operation.n_inputs for node in operation_nodes]
-        thoughts_iterator = iter(thoughts)
-        return [list(islice(thoughts_iterator, n_input)) for n_input in n_inputs]
