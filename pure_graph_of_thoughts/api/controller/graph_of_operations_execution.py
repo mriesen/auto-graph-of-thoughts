@@ -49,6 +49,11 @@ class GraphOfOperationsExecution:
         """
         self._operation_cursor = operation_node
 
+    def get_output_thought_nodes(self, operation_node: OperationNode) -> Sequence[ThoughtNode]:
+        return self._output_thought_nodes_by_operation_node[
+            operation_node
+        ] if operation_node in self._output_thought_nodes_by_operation_node else []
+
     def get_input_thought_nodes(self, operation_node: OperationNode) -> Sequence[ThoughtNode]:
         """
         Returns the input thought nodes for the given operation node.
