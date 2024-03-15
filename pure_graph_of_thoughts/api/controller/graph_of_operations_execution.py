@@ -49,7 +49,6 @@ class GraphOfOperationsExecution:
         """
         self._operation_cursor = operation_node
 
-
     def get_input_thought_nodes(self, operation_node: OperationNode) -> Sequence[ThoughtNode]:
         """
         Returns the input thought nodes for the given operation node.
@@ -97,7 +96,7 @@ class GraphOfOperationsExecution:
             self,
             predecessor_node: OperationNode,
             successor_node: OperationNode
-    ):
+    ) -> Sequence[ThoughtNode]:
         output_thought_nodes = self._output_thought_nodes_by_operation_node[
             predecessor_node
         ] if predecessor_node in self._output_thought_nodes_by_operation_node else []
@@ -105,7 +104,6 @@ class GraphOfOperationsExecution:
                 predecessor_node.successors, output_thought_nodes
         )
         return successors_input_thoughts[predecessor_node.successors.index(successor_node)]
-
 
     @staticmethod
     def _create_input_thoughts_buckets(
