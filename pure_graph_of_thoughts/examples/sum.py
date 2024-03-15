@@ -1,6 +1,6 @@
-from ..api.graph.operation import OperationNode, GraphOfOperations
-from ..api.language_model import Prompt, Example
-from ..api.operation import PromptOperation, OperationType, ScoreExecOperation, OperationRegistry, Evaluator
+from pure_graph_of_thoughts.api.graph.operation import OperationNode, GraphOfOperations
+from pure_graph_of_thoughts.api.language_model import Prompt, Example
+from pure_graph_of_thoughts.api.operation import PromptOperation, OperationType, ScoreExecOperation, OperationRegistry, Evaluator
 
 op_split = PromptOperation(
         name='split',
