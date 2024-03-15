@@ -50,20 +50,20 @@ class Node(ABC):
         return self.predecessors[0].depth + 1
 
     @property
-    def is_root(self) -> bool:
+    def is_source(self) -> bool:
         """
-        Returns whether the node is the root of the graph.
+        Returns whether the node is the source of the graph.
         This is the case when a node has no predecessors.
-        :return: node is root
+        :return: node is source
         """
         return not self.predecessors
 
     @property
-    def is_leaf(self) -> bool:
+    def is_sink(self) -> bool:
         """
-        Returns whether the node is a leaf.
+        Returns whether the node is a sink.
         This is the case when a node has no successors.
-        :return: node is a leaf
+        :return: node is a sink
         """
         return not self.successors
 

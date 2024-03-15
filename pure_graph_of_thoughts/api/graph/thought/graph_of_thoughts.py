@@ -12,7 +12,7 @@ class GraphOfThoughts(Graph[ThoughtNode]):
 
     @classmethod
     def from_init_state(cls, init_state: State) -> Self:
-        root = ThoughtNode.of(
+        source = ThoughtNode.of(
                 Thought(state=init_state)
         )
-        return cls.from_root(root)
+        return cls.from_source(source)

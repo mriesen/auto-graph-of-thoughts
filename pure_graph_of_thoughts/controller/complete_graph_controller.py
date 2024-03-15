@@ -34,7 +34,7 @@ class CompleteGraphController(Controller):
         :return: all thoughts by nodes
         """
         visited: Set[OperationNode] = set()
-        queue: Deque[OperationNode] = deque([graph_of_operations.root])
+        queue: Deque[OperationNode] = deque([graph_of_operations.source])
         graph_of_thoughts: GraphOfThoughts = GraphOfThoughts.from_init_state(init_state)
         execution = GraphOfOperationsExecution(graph_of_operations, graph_of_thoughts)
 

@@ -14,17 +14,17 @@ class Graph(ABC, Generic[N]):
     Represents a graph.
     """
 
-    root: N
-    """The root node of the graph"""
+    source: N
+    """The source node of the graph"""
 
     @classmethod
-    def from_root(cls, root: N) -> Self:
+    def from_source(cls, source: N) -> Self:
         """
-        Creates a new graph out of a given root node.
-        :param root: root node of the graph
+        Creates a new graph out of a given source node.
+        :param source: source node of the graph
         :return: new graph
         """
-        return cls(root)
+        return cls(source)
 
     @property
     def nodes(self) -> Set[N]:
@@ -32,7 +32,7 @@ class Graph(ABC, Generic[N]):
         Returns all nodes in the graph.
         :return: all nodes
         """
-        return set(self._get_nodes(self.root))
+        return set(self._get_nodes(self.source))
 
     @property
     def edges(self) -> Set[Tuple[N, N]]:
@@ -40,7 +40,7 @@ class Graph(ABC, Generic[N]):
         Returns all the edges in the graph.
         :return: all edges
         """
-        return set(self._get_edges(self.root))
+        return set(self._get_edges(self.source))
 
     @staticmethod
     def _get_nodes(current_node: N) -> Sequence[N]:

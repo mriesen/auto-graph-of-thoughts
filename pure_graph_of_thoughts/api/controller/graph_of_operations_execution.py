@@ -23,7 +23,7 @@ class GraphOfOperationsExecution:
     ) -> None:
         self._graph_of_operations = graph_of_operations
         self._graph_of_thoughts = graph_of_thoughts
-        self._operation_cursor = operation_cursor if operation_cursor is not None else graph_of_operations.root
+        self._operation_cursor = operation_cursor if operation_cursor is not None else graph_of_operations.source
         self._output_thought_nodes_by_operation_node = {}
 
     @property
@@ -56,9 +56,9 @@ class GraphOfOperationsExecution:
         :param operation_node: operation node to get input thought nodes for
         :return: input thought nodes for operation node
         """
-        if operation_node.is_root:
+        if operation_node.is_source:
             return [
-                self.graph_of_thoughts.root
+                self.graph_of_thoughts.source
             ]
 
         return [
