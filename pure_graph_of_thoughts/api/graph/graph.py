@@ -1,6 +1,7 @@
 from abc import ABC
+from collections import defaultdict
 from dataclasses import dataclass
-from typing import TypeVar, Generic, Self, Set, Tuple, Sequence
+from typing import TypeVar, Generic, Self, Set, Tuple, Sequence, Dict, List
 
 from .node import Node
 
@@ -41,6 +42,35 @@ class Graph(ABC, Generic[N]):
         :return: all edges
         """
         return set(self._get_edges(self.source))
+
+    @property
+    def sinks(self) -> Sequence[N]:
+        """
+        Returns all the sinks of the graph.
+        :return: all sinks
+        """
+        return [node for node in self.nodes if node.is_sink]
+
+    @property
+    def layers(self) -> Sequence[Sequence[N]]:
+        """
+        Returns all the layers of nodes in the graph.
+        :return: all layers of nodes
+        """
+        layers: Dict[int, List[N]] = defaultdict(list)
+        for node in self.nodes:
+            layers[node.depth].append(node)
+        return [
+            layer for depth, layer in sorted(layers.items())
+        ]
+
+    @property
+    def depth(self) -> int:
+        """
+        Returns the depth of the graph.
+        :return: the depth of the graph
+        """
+        return max([node.depth for node in self.nodes], default=0)
 
     @staticmethod
     def _get_nodes(current_node: N) -> Sequence[N]:

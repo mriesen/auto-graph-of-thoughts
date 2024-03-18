@@ -94,6 +94,14 @@ class Node(ABC):
         self._successors.remove(successor)
         return self
 
+    def remove_all_successors(self) -> Self:
+        """
+        Removes all successors from the current node.
+        :return: current node
+        """
+        self._successors.clear()
+        return self
+
     def __hash__(self) -> int:
         return hash((self.__class__.__name__, self.id))
 
