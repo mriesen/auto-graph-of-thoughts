@@ -7,7 +7,7 @@ from ...thought import Thought
 _next_thought_node_id = node_id_generator()
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class ThoughtNode(Node):
     """
     Represents a node in a graph of thoughts.

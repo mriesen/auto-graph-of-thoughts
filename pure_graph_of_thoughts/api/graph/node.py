@@ -13,7 +13,7 @@ def node_id_generator() -> Callable[[], int]:
     return lambda: next(id_iterator)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class Node(ABC):
     """
     Abstract representation of a node in a graph.

@@ -7,7 +7,7 @@ from ...operation import Operation
 _next_operation_node_id = node_id_generator()
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class OperationNode(Node):
     """
     Represents a node in a graph of operations.
