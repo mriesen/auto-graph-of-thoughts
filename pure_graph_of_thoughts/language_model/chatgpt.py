@@ -29,6 +29,7 @@ class ChatGPT(LanguageModel):
     _client: OpenAI
     _total_cost: float = 0
     _currency: str = '$'
+    _logger: logging.Logger
 
     @property
     def total_cost(self) -> float:

@@ -60,9 +60,10 @@ class Graph(ABC, Generic[N]):
         layers: Dict[int, List[N]] = defaultdict(list)
         for node in self.nodes:
             layers[node.depth].append(node)
-        return [
+        layer_matrix = [
             layer for depth, layer in sorted(layers.items())
         ]
+        return layer_matrix
 
     @property
     def depth(self) -> int:
@@ -74,9 +75,10 @@ class Graph(ABC, Generic[N]):
 
     @staticmethod
     def _get_nodes(current_node: N) -> Sequence[N]:
-        return list(current_node.successors) + [
-            node for successor in current_node.successors for node in
-            Graph._get_nodes(successor)
+        return [current_node] + [
+            node
+            for successor in current_node.successors
+            for node in Graph._get_nodes(successor)
         ]
 
     @staticmethod
