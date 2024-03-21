@@ -89,9 +89,7 @@ class GraphGenerator(ABC):
             divergence: bool,
             expect_single_output: bool
     ) -> Optional[OperationMatrix]:
-
         predecessor_operations: Sequence[Operation] = operation_matrix[-1]
-
         successor_operation_candidates = self._next_operation_candidates(
                 predecessor_operations,
                 max_breadth,

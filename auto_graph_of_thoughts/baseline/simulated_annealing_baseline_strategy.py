@@ -2,10 +2,10 @@ from math import exp, floor, ceil
 from random import random, randint
 from typing import Sequence, Callable, Optional
 
-from .baseline_result import BaselineResult
-from .baseline_strategy import BaselineStrategy
 from pure_graph_of_thoughts.api.graph.operation import GraphOfOperations
 from pure_graph_of_thoughts.api.operation import Operation
+from .baseline_result import BaselineResult
+from .baseline_strategy import BaselineStrategy
 
 
 class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
@@ -25,8 +25,13 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
     _temperature: float
     _cooling_factor: float
     _best_energy: float
-    _best_graph: Optional[GraphOfOperations]
-    _current_graph: Optional[GraphOfOperations]
+    _current_result: Optional[BaselineResult]
+
+    @property
+    def current_result(self) -> BaselineResult:
+        assert self._current_result is not None, ('The current result '
+                                                  'of the Simulated Annealing baseline strategy is None')
+        return self._current_result
 
     def __init__(self,
                  operations: Sequence[Operation],
@@ -44,18 +49,25 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
         self._temperature = 1.0
         self._cooling_factor = cooling_factor
         self._best_energy = 0
-        self._current_graph = None
+        self._current_result = None
+
+    def generate(self, max_iterations: int, stop_on_first_valid: bool = False) -> BaselineResult:
+        for i in range(1, max_iterations + 1):
+            baseline_result = self._generate_single(i)
+            if stop_on_first_valid and baseline_result.is_valid:
+                return baseline_result
+
+        return self.current_result
 
     def _generate_single(self, iteration: int) -> BaselineResult:
-
         self._temperature *= self._cooling_factor
-        new_graph = self._create_neighbor(self._current_graph)
-        baseline_result = self._graph_evaluator(new_graph, iteration)
+        neighbor_graph = self._create_neighbor(self.current_result.graph_of_operations)
+        baseline_result = self._graph_evaluator(neighbor_graph, iteration)
         energy = float(baseline_result.is_valid) / baseline_result.cost
         probability: float = exp(-energy / self._temperature)
 
         if energy > self._best_energy or random() <= probability:
-            self._current_graph = new_graph
+            self._current_result = baseline_result
 
         return baseline_result
 

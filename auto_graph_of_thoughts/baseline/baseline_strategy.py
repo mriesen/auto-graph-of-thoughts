@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Sequence, Callable, List, Optional
+from typing import Sequence, Callable, List
 
 from pure_graph_of_thoughts.api.graph.operation import GraphOfOperations
 from pure_graph_of_thoughts.api.operation import Operation
@@ -33,26 +33,21 @@ class BaselineStrategy(ABC):
         :param operations: operations
         :param graph_evaluator: graph evaluator to evaluate a generated graph of operations
         """
-
         self._operations = operations
         self._graph_generator = GraphGenerator(operations)
         self._graph_evaluator = graph_evaluator
         self._graph_candidates = []
         self._logger = logging.getLogger(self.__class__.__name__)
 
-    def generate(self, max_iterations: int) -> BaselineResult:
+    @abstractmethod
+    def generate(self, max_iterations: int, stop_on_first_valid: bool = False) -> BaselineResult:
         """
         Generates a baseline result by iteratively applying the strategy.
         :param max_iterations: maximum number of iterations
+        :param stop_on_first_valid: whether to stop on the first valid result (default: False)
         :return: baseline result
         """
-
-        result: BaselineResult = self._generate_single(0)
-        for i in range(1, max_iterations):
-            result = self._generate_single(i)
-            if result.is_valid:
-                return result
-        return result
+        pass
 
     @abstractmethod
     def _generate_single(self, iteration: int) -> BaselineResult:
