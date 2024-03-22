@@ -1,5 +1,6 @@
+import copy
 from dataclasses import dataclass
-from typing import Self, Sequence, List
+from typing import Self, Sequence, List, Dict, Any
 
 from .operation_matrix import OperationMatrix
 from .operation_node import OperationNode
@@ -41,6 +42,16 @@ class GraphOfOperations(Graph[OperationNode]):
             ]
             predecessor_nodes = cls._connect_layer(predecessor_nodes, successor_nodes)
         return cls.from_source(source_node)
+
+    def __deepcopy__(self, memo: Dict[Any, Any]) -> Self:
+        return self.from_operation_matrix(self.operation_matrix)
+
+    def clone(self) -> Self:
+        """
+        Clones the current graph of operations and returns a deep copy of the graph of operations.
+        :return: deep copy of the operations
+        """
+        return copy.deepcopy(self)
 
     @staticmethod
     def _connect_layer(
