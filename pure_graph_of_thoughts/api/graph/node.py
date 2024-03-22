@@ -1,20 +1,13 @@
-import itertools
-from abc import ABC, abstractmethod
+from abc import ABC
 from dataclasses import dataclass
-from typing import List, Self, Sequence, Callable, Any
+from typing import List, Self, Sequence, Any
+
+from ..id import Identifiable
+from ..seal import Sealable, mutating, MutationScope
 
 
-def node_id_generator() -> Callable[[], int]:
-    """
-    Creates a node ID generator.
-    :return: function that returns the next node ID
-    """
-    id_iterator = itertools.count(0)
-    return lambda: next(id_iterator)
-
-
-@dataclass(frozen=True, eq=False)
-class Node(ABC):
+@dataclass(kw_only=True, eq=False)
+class Node(Identifiable, Sealable, ABC):
     """
     Abstract representation of a node in a graph.
     """
@@ -26,17 +19,13 @@ class Node(ABC):
     """The successors of the node"""
 
     @property
-    @abstractmethod
-    def id(self) -> int:
-        """The ID of the node"""
-        pass
-
-    @property
     def predecessors(self) -> Sequence[Self]:
+        """The predecessors of the node"""
         return self._predecessors
 
     @property
     def successors(self) -> Sequence[Self]:
+        """The successors of the node"""
         return self._successors
 
     @property
@@ -67,6 +56,7 @@ class Node(ABC):
         """
         return not self.successors
 
+    @mutating(scope=MutationScope.ALL)
     def append(self: Self, successor: Self) -> Self:
         """
         Appends a successor to the current node.
@@ -84,6 +74,14 @@ class Node(ABC):
         :return: successor nodes
         """
         return [self.append(successor) for successor in successors]
+
+    def seal(self) -> None:
+        if not self.is_sealed:
+            super().seal()
+        for unsealed_successor in [successor for successor in self._successors if not successor.is_sealed]:
+            unsealed_successor.seal()
+        for unsealed_predecessor in [predecessor for predecessor in self._predecessors if not predecessor.is_sealed]:
+            unsealed_predecessor.seal()
 
     def __hash__(self) -> int:
         return hash((self.__class__.__name__, self.id))

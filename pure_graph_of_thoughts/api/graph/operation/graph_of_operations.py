@@ -7,7 +7,7 @@ from ..graph import Graph
 from ...operation import Operation
 
 
-@dataclass(frozen=True)
+@dataclass
 class GraphOfOperations(Graph[OperationNode]):
     """
     Represents a graph of operations.
@@ -41,7 +41,6 @@ class GraphOfOperations(Graph[OperationNode]):
             ]
             predecessor_nodes = cls._connect_layer(predecessor_nodes, successor_nodes)
         return cls.from_source(source_node)
-
 
     @staticmethod
     def _connect_layer(

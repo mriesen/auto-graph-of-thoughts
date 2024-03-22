@@ -1,7 +1,7 @@
 from typing import Dict, Callable
 
-from pure_graph_of_thoughts.api.language_model import LanguageModel, Prompt, LanguageModelException
-from pure_graph_of_thoughts.api.state import State
+from ..api.language_model import LanguageModel, Prompt, LanguageModelException
+from ..api.state import State
 
 
 class MockLanguageModel(LanguageModel):

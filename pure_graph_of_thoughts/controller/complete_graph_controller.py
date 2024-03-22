@@ -49,4 +49,5 @@ class CompleteGraphController(Controller):
 
             queue.extend([successor for successor in operation_node.successors if successor not in visited])
 
+        graph_of_thoughts.seal()
         return graph_of_thoughts

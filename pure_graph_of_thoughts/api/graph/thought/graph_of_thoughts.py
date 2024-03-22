@@ -7,7 +7,7 @@ from ...state import State
 from ...thought import Thought
 
 
-@dataclass(frozen=True)
+@dataclass
 class GraphOfThoughts(Graph[ThoughtNode]):
     """
     Represents a graph of thoughts.

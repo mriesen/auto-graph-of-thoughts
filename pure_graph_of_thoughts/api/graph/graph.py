@@ -4,28 +4,25 @@ from dataclasses import dataclass
 from typing import TypeVar, Generic, Self, Set, Tuple, Sequence, Dict, List
 
 from .node import Node
+from ..seal import Sealable
 
 N = TypeVar('N', bound=Node)
 """The node type"""
 
 
-@dataclass(frozen=True)
-class Graph(ABC, Generic[N]):
+@dataclass(kw_only=True)
+class Graph(ABC, Sealable, Generic[N]):
     """
     Represents a graph.
     """
 
-    source: N
+    _source: N
     """The source node of the graph"""
 
-    @classmethod
-    def from_source(cls, source: N) -> Self:
-        """
-        Creates a new graph out of a given source node.
-        :param source: source node of the graph
-        :return: new graph
-        """
-        return cls(source)
+    @property
+    def source(self) -> N:
+        """The source node of the graph"""
+        return self._source
 
     @property
     def nodes(self) -> Set[N]:
@@ -72,6 +69,19 @@ class Graph(ABC, Generic[N]):
         :return: the depth of the graph
         """
         return max([node.depth for node in self.nodes], default=0)
+
+    def seal(self) -> None:
+        super().seal()
+        self._source.seal()
+
+    @classmethod
+    def from_source(cls, source: N) -> Self:
+        """
+        Creates a new graph out of a given source node.
+        :param source: source node of the graph
+        :return: new graph
+        """
+        return cls(_source=source)
 
     @staticmethod
     def _get_nodes(current_node: N) -> Sequence[N]:

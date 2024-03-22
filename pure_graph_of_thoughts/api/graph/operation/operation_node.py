@@ -1,28 +1,26 @@
 from dataclasses import dataclass, field
 from typing import Self
 
-from ..node import Node, node_id_generator
+from ..node import Node
 from ...operation import Operation
 
-_next_operation_node_id = node_id_generator()
 
-
-@dataclass(frozen=True, eq=False)
+@dataclass(kw_only=True, eq=False)
 class OperationNode(Node):
     """
     Represents a node in a graph of operations.
     """
 
-    operation: Operation
+    _operation: Operation
     """The node's operation"""
 
-    _id: int = field(default_factory=_next_operation_node_id)
-    """The ID of the node for unique identification"""
+    _is_sealed: bool = field(default=False)
+    """Whether the node is sealed"""
 
     @property
-    def id(self) -> int:
-        """The ID of the node"""
-        return self._id
+    def operation(self) -> Operation:
+        """The operation of the node"""
+        return self._operation
 
     @classmethod
     def of(cls, operation: Operation) -> Self:
@@ -31,7 +29,7 @@ class OperationNode(Node):
         :param operation: operation of the node
         :return: new node
         """
-        return cls(operation=operation, _predecessors=[], _successors=[])
+        return cls(_operation=operation, _predecessors=[], _successors=[])
 
     def append_operation(self, operation: Operation) -> Self:
         """
