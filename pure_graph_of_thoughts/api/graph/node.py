@@ -2,8 +2,8 @@ from abc import ABC
 from dataclasses import dataclass
 from typing import List, Self, Sequence, Any
 
-from ..id import Identifiable
-from ..seal import Sealable, mutating, MutationScope
+from ..internal.id import Identifiable
+from ..internal.seal import Sealable, mutating, MutationScope
 
 
 @dataclass(kw_only=True, eq=False)

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import TypeVar, Generic, Self, Set, Tuple, Sequence, Dict, List
 
 from .node import Node
-from ..seal import Sealable
+from ..internal.seal import Sealable
 
 N = TypeVar('N', bound=Node)
 """The node type"""
