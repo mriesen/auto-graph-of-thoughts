@@ -1,8 +1,10 @@
 from dataclasses import dataclass, field
-from typing import Self
+from typing import Self, Optional
 
+from .operation_node_schema import OperationNodeSchema
 from ..node import Node
-from ...operation import Operation
+from ...internal.id import Id
+from ...operation import Operation, OperationKey
 
 
 @dataclass(kw_only=True, eq=False)
@@ -23,13 +25,17 @@ class OperationNode(Node):
         return self._operation
 
     @classmethod
-    def of(cls, operation: Operation) -> Self:
+    def of(cls, operation: Operation, id: Optional[Id] = None) -> Self:
         """
         Creates a node for a given operation.
         :param operation: operation of the node
+        :param id: id of the node
         :return: new node
         """
-        return cls(_operation=operation, _predecessors=[], _successors=[])
+        if id is not None:
+            return cls(id=id, _operation=operation, _predecessors=[], _successors=[])
+        else:
+            return cls(_operation=operation, _predecessors=[], _successors=[])
 
     def append_operation(self, operation: Operation) -> Self:
         """
@@ -39,6 +45,17 @@ class OperationNode(Node):
         """
         successor = self.of(operation)
         return self.append(successor)
+
+    def to_schema(self) -> OperationNodeSchema:
+        return OperationNodeSchema(
+                id=self.id,
+                operation_key=OperationKey(
+                        name=self.operation.name,
+                        n_inputs=self.operation.n_inputs,
+                        n_outputs=self.operation.n_outputs,
+                        type=self.operation.type
+                )
+        )
 
     def __hash__(self) -> int:
         return super().__hash__()

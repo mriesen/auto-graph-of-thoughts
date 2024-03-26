@@ -1,22 +1,18 @@
+from abc import ABC
 from dataclasses import field, dataclass
 
 from .id_generator import id_generator
+from .id import Id
 
 
-@dataclass(kw_only=True, eq=False)
-class Identifiable:
+class Identifiable(ABC):
     """
     Represents a data structure that is identifiable by a unique identifier.
     """
+    id: Id
 
-    _id: int = field(init=False)
+
+@dataclass(kw_only=True, eq=False)
+class AutoIdentifiable(Identifiable):
+    id: Id = field(default_factory=id_generator)
     """The ID of the instance for unique identification"""
-
-    def __post_init__(self) -> None:
-        cls = type(self)
-        self._id = id_generator(cls)()
-
-    @property
-    def id(self) -> int:
-        """The ID of the instance"""
-        return self._id

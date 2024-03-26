@@ -73,10 +73,14 @@ class Controller(ABC):
                     self._process_score_operation(operation.score_operation, operation_node, input_state, output_state)
                     for output_state in output_states
                 ]
-            return [Thought(state=output_state, origin=operation_node) for output_state in output_states]
+            return [
+                Thought(state=output_state, origin=operation_node) for output_state in output_states
+            ]
         elif isinstance(operation, ExecOperation):
             output_states = operation.execute(input_states)
-            return [Thought(state=output_state, origin=operation_node) for output_state in output_states]
+            return [
+                Thought(state=output_state, origin=operation_node) for output_state in output_states
+            ]
         raise ControllerException(f'Operation is not supported: {type(operation)}')
 
     def _process_score_operation(

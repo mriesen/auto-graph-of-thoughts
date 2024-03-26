@@ -1,17 +1,24 @@
+import copy
 from abc import ABC
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import TypeVar, Generic, Self, Set, Tuple, Sequence, Dict, List
+from typing import TypeVar, Generic, Self, Set, Tuple, Sequence, Dict, List, Mapping
 
+from .graph_schema import GraphSchema
 from .node import Node
+from .node_schema import NodeSchema
+from ..internal.id import Id
 from ..internal.seal import Sealable
 
 N = TypeVar('N', bound=Node)
 """The node type"""
 
+S = TypeVar('S', bound=NodeSchema)
+"""The node schema type"""
+
 
 @dataclass(kw_only=True)
-class Graph(ABC, Sealable, Generic[N]):
+class Graph(Sealable, ABC, Generic[N]):
     """
     Represents a graph.
     """
@@ -74,6 +81,20 @@ class Graph(ABC, Sealable, Generic[N]):
         super().seal()
         self._source.seal()
 
+    def to_schema(self) -> GraphSchema[NodeSchema]:
+        """
+        Converts the graph into its schematic form.
+        :return: graph schema
+        """
+
+        edges: Sequence[Tuple[Id, Id]] = [
+            (a.id, b.id) for (a, b) in self.edges
+        ]
+        nodes: Sequence[NodeSchema] = [
+            node.to_schema() for node in self.nodes
+        ]
+        return GraphSchema(edges=edges, nodes=nodes)
+
     @classmethod
     def from_source(cls, source: N) -> Self:
         """
@@ -82,6 +103,27 @@ class Graph(ABC, Sealable, Generic[N]):
         :return: new graph
         """
         return cls(_source=source)
+
+    @classmethod
+    def _construct_graph(cls, nodes: Sequence[N], edges: Sequence[Tuple[Id, Id]]) -> Self:
+        """
+        Constructs a graph out of a given sequence of nodes and edges.
+        :param nodes: nodes of the graph
+        :param edges: edges of the graph
+        :return: constructed graph
+        """
+        nodes_by_id: Mapping[Id, N] = {
+            node.id: node for node in nodes
+        }
+        for (id_current, id_successor) in edges:
+            current_node = nodes_by_id[id_current]
+            successor_node = nodes_by_id[id_successor]
+            current_node.append(successor_node)
+
+        source_node = [node for node in nodes if node.is_source][0]
+        instance: Self = cls.from_source(source_node)
+        instance.seal()
+        return instance
 
     @staticmethod
     def _get_nodes(current_node: N) -> Sequence[N]:
@@ -96,3 +138,10 @@ class Graph(ABC, Sealable, Generic[N]):
         return [(current_node, successor) for successor in current_node.successors] + [
             edge for successor in current_node.successors for edge in Graph._get_edges(successor)
         ]
+
+    def clone(self) -> Self:
+        """
+        Clones the current graph and returns a deep copy of the graph.
+        :return: deep copy
+        """
+        return copy.deepcopy(self)

@@ -2,28 +2,29 @@ from abc import ABC
 from dataclasses import dataclass, field
 from typing import Callable, Optional, Sequence
 
-from .operation_type import OperationType
+from .operation_key import OperationKey
 from ..language_model import Prompt
 from ..state import State
 
 
 @dataclass(frozen=True)
-class Operation(ABC):
+class Operation(OperationKey, ABC):
     """
     Represents an operation.
     """
 
-    name: str
-    """The name of the operation"""
-
-    n_inputs: int
-    """The number of inputs for the operation"""
-
-    n_outputs: int
-    """The number of outputs for the operation"""
-
-    type: OperationType
-    """The type of operation"""
+    @property
+    def key(self) -> OperationKey:
+        """
+        Returns the key of the operation.
+        :return: operation key
+        """
+        return OperationKey(
+                name=self.name,
+                n_inputs=self.n_inputs,
+                n_outputs=self.n_outputs,
+                type=self.type
+        )
 
     @property
     def is_scorable(self) -> bool:

@@ -1,1 +1,2 @@
-from .identifiable import Identifiable
+from .id import Id
+from .identifiable import Identifiable, AutoIdentifiable

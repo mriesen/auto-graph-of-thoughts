@@ -1,11 +1,13 @@
 import copy
 from dataclasses import dataclass
-from typing import Self, Sequence, List, Dict, Any
+from typing import Self, Sequence, Dict, Any, List, Mapping
 
 from .operation_matrix import OperationMatrix
 from .operation_node import OperationNode
+from .operation_node_schema import OperationNodeSchema
 from ..graph import Graph
-from ...operation import Operation
+from ..graph_schema import GraphSchema
+from ...operation import Operation, OperationKey
 
 
 @dataclass
@@ -57,6 +59,12 @@ class GraphOfOperations(Graph[OperationNode]):
     def _connect_layer(
             predecessor_nodes: Sequence[OperationNode], successor_nodes: Sequence[OperationNode]
     ) -> Sequence[OperationNode]:
+        """
+        Connects the given successor nodes with the given predecessor nodes.
+        :param predecessor_nodes: predecessor nodes
+        :param successor_nodes: successor nodes
+        :return: connected layer
+        """
         predecessor_nodes_by_output_index: List[OperationNode] = [
             predecessor_node
             for predecessor_node in predecessor_nodes
@@ -74,3 +82,22 @@ class GraphOfOperations(Graph[OperationNode]):
             predecessor_nodes_by_output_index[i].append(successor_node)
 
         return successor_nodes
+
+    @classmethod
+    def from_schema(cls, schema: GraphSchema[OperationNodeSchema], operations: Sequence[Operation]) -> Self:
+        """
+        Constructs a graph of operations from a given graph schema and a sequence of operations.
+        :param schema: graph schema
+        :param operations: operations
+        :return: constructed graph of operations
+        """
+        operations_by_key: Mapping[OperationKey, Operation] = {
+            operation.key: operation for operation in operations
+        }
+        nodes = [
+            OperationNode.of(
+                    id=node.id,
+                    operation=operations_by_key[node.operation_key]
+            ) for node in schema.nodes
+        ]
+        return cls._construct_graph(nodes, schema.edges)

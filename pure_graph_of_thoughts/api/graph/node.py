@@ -1,13 +1,14 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Self, Sequence, Any
 
-from ..internal.id import Identifiable
+from .node_schema import NodeSchema
+from ..internal.id import AutoIdentifiable
 from ..internal.seal import Sealable, mutating, MutationScope
 
 
 @dataclass(kw_only=True, eq=False)
-class Node(Identifiable, Sealable, ABC):
+class Node(AutoIdentifiable, Sealable, ABC):
     """
     Abstract representation of a node in a graph.
     """
@@ -82,6 +83,14 @@ class Node(Identifiable, Sealable, ABC):
             unsealed_successor.seal()
         for unsealed_predecessor in [predecessor for predecessor in self._predecessors if not predecessor.is_sealed]:
             unsealed_predecessor.seal()
+
+    @abstractmethod
+    def to_schema(self) -> NodeSchema:
+        """
+        Converts the instance to its schematic representation.
+        :return: node schema
+        """
+        pass
 
     def __hash__(self) -> int:
         return hash((self.__class__.__name__, self.id))

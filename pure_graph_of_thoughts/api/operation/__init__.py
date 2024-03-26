@@ -1,4 +1,5 @@
 from .evaluator import Evaluator
+from .operation_key import OperationKey
 from .operation import (
     Operation,
     PromptOperation,

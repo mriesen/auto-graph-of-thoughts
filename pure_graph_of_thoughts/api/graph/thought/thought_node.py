@@ -1,7 +1,9 @@
 from dataclasses import dataclass
-from typing import Self
+from typing import Self, Optional
 
+from .thought_node_schema import ThoughtNodeSchema
 from ..node import Node
+from ...internal.id import Id
 from ...thought import Thought
 
 
@@ -19,13 +21,25 @@ class ThoughtNode(Node):
         return self._thought
 
     @classmethod
-    def of(cls, thought: Thought) -> Self:
+    def of(cls, thought: Thought, id: Optional[Id] = None) -> Self:
         """
         Creates a node for a given thought.
         :param thought: thought of the node
+        :param id: optional id of the node
         :return: new node
         """
+        if id is not None:
+            return cls(id=id, _thought=thought, _predecessors=[], _successors=[])
         return cls(_thought=thought, _predecessors=[], _successors=[])
+
+    def to_schema(self) -> ThoughtNodeSchema:
+        origin_id: Optional[Id] = self.thought.origin.id if self.thought.origin is not None else None
+        return ThoughtNodeSchema(
+                id=self.id,
+                origin_id=origin_id,
+                state=self.thought.state,
+                score=self.thought.score
+        )
 
     def __hash__(self) -> int:
         return super().__hash__()
