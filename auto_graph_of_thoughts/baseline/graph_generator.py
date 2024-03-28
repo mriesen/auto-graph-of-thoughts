@@ -1,7 +1,7 @@
 import logging
 from abc import ABC
 from itertools import product
-from random import choice
+from random import Random
 from typing import Sequence, Mapping, Set, Dict, Optional, Callable
 
 from pure_graph_of_thoughts.api.graph.operation import GraphOfOperations
@@ -11,16 +11,23 @@ from pure_graph_of_thoughts.api.operation import Operation
 
 class GraphGenerator(ABC):
     """
-    Generator for graph of operations.
+    Generator for graphs of operations.
     """
 
     _operations: Sequence[Operation]
     _operations_by_n_inputs: Mapping[int, Set[Operation]]
+    _random: Random
     _logger: logging.Logger
 
-    def __init__(self, operations: Sequence[Operation]) -> None:
+    def __init__(self, operations: Sequence[Operation], seed: Optional[int] = None) -> None:
+        """
+        Instantiates a new graph generator.
+        :param operations: possible operations
+        :param seed: seed for the random number generator
+        """
         self._operations = operations
         self._operations_by_n_inputs = self._create_n_inputs_operations_mapping(operations)
+        self._random = Random(seed)
         self._logger = logging.getLogger(self.__class__.__name__)
 
     def generate_random_graph(self, graph_depth: int, max_breadth: int, divergence_cutoff: int) -> GraphOfOperations:
@@ -32,7 +39,7 @@ class GraphGenerator(ABC):
         :return: generated graph of operations
         """
         single_input_operations = list(self._operations_by_n_inputs[1])
-        source_operation = choice(single_input_operations)
+        source_operation = self._random.choice(single_input_operations)
         operation_matrix: OperationMatrix = [
             [source_operation]
         ]
@@ -98,7 +105,7 @@ class GraphGenerator(ABC):
         )
         if len(successor_operation_candidates) == 0:
             return None
-        successor_operations: Sequence[Operation] = choice(successor_operation_candidates)
+        successor_operations: Sequence[Operation] = self._random.choice(successor_operation_candidates)
 
         return list(operation_matrix) + [successor_operations]
 

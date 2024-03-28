@@ -1,5 +1,4 @@
 from math import exp, floor, ceil
-from random import random, randint
 from typing import Sequence, Callable, Optional
 
 from pure_graph_of_thoughts.api.graph.operation import GraphOfOperations
@@ -28,23 +27,26 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
     _current_result: Optional[BaselineResult]
 
     @property
-    def current_result(self) -> BaselineResult:
-        assert self._current_result is not None, ('The current result '
-                                                  'of the Simulated Annealing baseline strategy is None')
+    def current_result(self) -> Optional[BaselineResult]:
+        """The current result."""
         return self._current_result
 
-    def __init__(self,
-                 operations: Sequence[Operation],
-                 cooling_factor: float,
-                 graph_evaluator: Callable[[GraphOfOperations, int], BaselineResult]) -> None:
+    def __init__(
+            self,
+            operations: Sequence[Operation],
+            cooling_factor: float,
+            graph_evaluator: Callable[[GraphOfOperations, int], BaselineResult],
+            seed: Optional[int] = None
+    ) -> None:
         """
         Instantiates a simulated annealing baseline strategy.
         :param operations: operations
         :param cooling_factor: cooling factor to decrease the temperature with
         :param graph_evaluator: evaluator for the generated graph of operations
+        :param seed: seed for random number generator
         """
 
-        super().__init__(operations, graph_evaluator)
+        super().__init__(operations, graph_evaluator, seed)
 
         self._temperature = 1.0
         self._cooling_factor = cooling_factor
@@ -61,17 +63,19 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
 
     def _generate_single(self, iteration: int) -> BaselineResult:
         self._temperature *= self._cooling_factor
-        neighbor_graph = self._create_neighbor(self.current_result.graph_of_operations)
+        neighbor_graph = self._create_neighbor(
+                self._current_result.graph_of_operations if self._current_result is not None else None
+        )
         baseline_result = self._graph_evaluator(neighbor_graph, iteration)
         energy = float(baseline_result.is_valid) / baseline_result.cost
         probability: float = exp(-energy / self._temperature)
 
-        if energy > self._best_energy or random() <= probability:
+        if energy > self._best_energy or self._random.random() <= probability:
             self._current_result = baseline_result
 
         return baseline_result
 
-    def _create_neighbor(self, graph: Optional[GraphOfOperations]) -> GraphOfOperations:
+    def _create_neighbor(self, graph: Optional[GraphOfOperations] = None) -> GraphOfOperations:
         if graph is None:
             return self._create_complete_graph()
 
@@ -79,12 +83,12 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
 
         prev_depth = len(operation_matrix)
 
-        clip_depth = randint(1, prev_depth)
+        clip_depth = self._random.randint(1, prev_depth)
         clip_layers = operation_matrix[:clip_depth - 1]
 
         if len(clip_layers) == 0:
-            return self._create_neighbor(None)
-        neighbor_depth = randint(clip_depth, self._MAX_DEPTH)
+            return self._create_neighbor()
+        neighbor_depth = self._random.randint(clip_depth, self._MAX_DEPTH)
         divergence_cutoff: int = ceil(neighbor_depth * self._DIVERGENCE_CUTOFF_FACTOR)
         max_breadth = self._MAX_BREADTH
         neighbor = self._graph_generator.generate_random_graph_layers(
@@ -107,7 +111,7 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
         return neighbor
 
     def _create_complete_graph(self) -> GraphOfOperations:
-        graph_depth = randint(1, self._MAX_DEPTH)
+        graph_depth = self._random.randint(1, self._MAX_DEPTH)
         max_breadth = self._MAX_BREADTH
         divergence_cutoff: int = floor(graph_depth * self._DIVERGENCE_CUTOFF_FACTOR)
         return self._graph_generator.generate_random_graph(graph_depth, max_breadth, divergence_cutoff)

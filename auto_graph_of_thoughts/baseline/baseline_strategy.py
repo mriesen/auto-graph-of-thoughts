@@ -1,6 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Sequence, Callable, List
+from random import Random
+from typing import Sequence, Callable, List, Optional
 
 from pure_graph_of_thoughts.api.graph.operation import GraphOfOperations
 from pure_graph_of_thoughts.api.operation import Operation
@@ -21,22 +22,26 @@ class BaselineStrategy(ABC):
     _graph_generator: GraphGenerator
     _graph_evaluator: Callable[[GraphOfOperations, int], BaselineResult]
     _graph_candidates: List[GraphOfOperations]
+    _random: Random
     _logger: logging.Logger
 
     def __init__(
             self,
             operations: Sequence[Operation],
-            graph_evaluator: Callable[[GraphOfOperations, int], BaselineResult]
+            graph_evaluator: Callable[[GraphOfOperations, int], BaselineResult],
+            seed: Optional[int] = None
     ) -> None:
         """
         Instantiates a new baseline strategy.
         :param operations: operations
         :param graph_evaluator: graph evaluator to evaluate a generated graph of operations
+        :param seed: seed for random number generator
         """
         self._operations = operations
-        self._graph_generator = GraphGenerator(operations)
+        self._graph_generator = GraphGenerator(operations, seed)
         self._graph_evaluator = graph_evaluator
         self._graph_candidates = []
+        self._random = Random(seed)
         self._logger = logging.getLogger(self.__class__.__name__)
 
     @abstractmethod

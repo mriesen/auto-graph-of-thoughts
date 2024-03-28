@@ -1,5 +1,4 @@
 from math import floor
-from random import randint
 from typing import List, Sequence
 
 from .baseline_result import BaselineResult
@@ -16,7 +15,7 @@ class RandomBaselineStrategy(BaselineStrategy):
         baseline_results: List[BaselineResult] = []
         for i in range(1, max_iterations + 1):
             current_baseline_result = self._generate_single(i)
-            if current_baseline_result.is_valid:
+            if stop_on_first_valid and current_baseline_result.is_valid:
                 return current_baseline_result
             baseline_results.append(current_baseline_result)
 
@@ -27,7 +26,7 @@ class RandomBaselineStrategy(BaselineStrategy):
         return min(valid_baseline_results, key=lambda baseline_result: baseline_result.cost)
 
     def _generate_single(self, iteration: int) -> BaselineResult:
-        graph_depth = randint(1, self._MAX_DEPTH)
+        graph_depth = self._random.randint(1, self._MAX_DEPTH)
         max_breadth = self._MAX_BREADTH
         divergence_cutoff: int = floor(graph_depth * self._DIVERGENCE_CUTOFF_FACTOR)
         graph_of_operations = self._graph_generator.generate_random_graph(
