@@ -26,9 +26,9 @@ class RandomBaselineStrategy(BaselineStrategy):
         return min(valid_baseline_results, key=lambda baseline_result: baseline_result.cost)
 
     def _generate_single(self, iteration: int) -> BaselineResult:
-        graph_depth = self._random.randint(1, self._MAX_DEPTH)
-        max_breadth = self._MAX_BREADTH
-        divergence_cutoff: int = floor(graph_depth * self._DIVERGENCE_CUTOFF_FACTOR)
+        graph_depth = self._random.randint(1, self._config.max_depth)
+        max_breadth = self._config.max_breadth
+        divergence_cutoff: int = floor(graph_depth * self._config.divergence_cutoff_factor)
         graph_of_operations = self._graph_generator.generate_random_graph(
                 graph_depth, max_breadth, divergence_cutoff
         )

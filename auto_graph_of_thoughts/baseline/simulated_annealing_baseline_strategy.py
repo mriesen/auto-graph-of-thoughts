@@ -1,10 +1,11 @@
-from math import exp, floor, ceil
-from typing import Sequence, Callable, Optional
+from math import exp, floor
+from typing import Optional
 
 from pure_graph_of_thoughts.api.graph.operation import GraphOfOperations
-from pure_graph_of_thoughts.api.operation import Operation
 from .baseline_result import BaselineResult
 from .baseline_strategy import BaselineStrategy
+from .baseline_strategy_exception import BaselineStrategyException
+from .simulated_annealing_baseline_config import SimulatedAnnealingBaselineConfig
 
 
 class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
@@ -19,39 +20,29 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
     is reached and a complete re-generation is applied.
     """
 
-    _GRAPH_REGENERATION_THRESHOLD = 10
-
     _temperature: float
     _cooling_factor: float
     _best_energy: float
     _current_result: Optional[BaselineResult]
+    _neighbor_regeneration_threshold: int
 
     @property
     def current_result(self) -> Optional[BaselineResult]:
         """The current result."""
         return self._current_result
 
-    def __init__(
-            self,
-            operations: Sequence[Operation],
-            cooling_factor: float,
-            graph_evaluator: Callable[[GraphOfOperations, int], BaselineResult],
-            seed: Optional[int] = None
-    ) -> None:
+    def __init__(self, config: SimulatedAnnealingBaselineConfig) -> None:
         """
         Instantiates a simulated annealing baseline strategy.
-        :param operations: operations
-        :param cooling_factor: cooling factor to decrease the temperature with
-        :param graph_evaluator: evaluator for the generated graph of operations
-        :param seed: seed for random number generator
+        :param config: baseline strategy configuration
         """
-
-        super().__init__(operations, graph_evaluator, seed)
+        super().__init__(config)
 
         self._temperature = 1.0
-        self._cooling_factor = cooling_factor
+        self._cooling_factor = config.cooling_factor
         self._best_energy = 0
         self._current_result = None
+        self._neighbor_regeneration_threshold = config.neighbor_regeneration_threshold
 
     def generate(self, max_iterations: int, stop_on_first_valid: bool = False) -> BaselineResult:
         for i in range(1, max_iterations + 1):
@@ -59,6 +50,8 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
             if stop_on_first_valid and baseline_result.is_valid:
                 return baseline_result
 
+        if self.current_result is None:
+            raise BaselineStrategyException('Simulated Annealing Baseline Strategy did not generate a result')
         return self.current_result
 
     def _generate_single(self, iteration: int) -> BaselineResult:
@@ -88,9 +81,9 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
 
         if len(clip_layers) == 0:
             return self._create_neighbor()
-        neighbor_depth = self._random.randint(clip_depth, self._MAX_DEPTH)
-        divergence_cutoff: int = ceil(neighbor_depth * self._DIVERGENCE_CUTOFF_FACTOR)
-        max_breadth = self._MAX_BREADTH
+        neighbor_depth = self._random.randint(clip_depth, self._config.max_depth)
+        divergence_cutoff: int = floor(neighbor_depth * self._config.max_depth)
+        max_breadth = self._config.max_breadth
         neighbor = self._graph_generator.generate_random_graph_layers(
                 clip_depth + 1,
                 neighbor_depth,
@@ -99,7 +92,7 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
                 clip_layers
         )
         if neighbor is None or len(neighbor.sinks) > 1:
-            for _ in range(self._GRAPH_REGENERATION_THRESHOLD):
+            for _ in range(self._neighbor_regeneration_threshold):
                 self._logger.debug('Generated graph has more than one sink, re-generating neighbor')
                 neighbor = self._create_neighbor(graph)
                 if neighbor is not None:
@@ -111,7 +104,7 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
         return neighbor
 
     def _create_complete_graph(self) -> GraphOfOperations:
-        graph_depth = self._random.randint(1, self._MAX_DEPTH)
-        max_breadth = self._MAX_BREADTH
-        divergence_cutoff: int = floor(graph_depth * self._DIVERGENCE_CUTOFF_FACTOR)
+        graph_depth = self._random.randint(1, self._config.max_depth)
+        max_breadth = self._config.max_breadth
+        divergence_cutoff: int = floor(graph_depth * self._config.divergence_cutoff_factor)
         return self._graph_generator.generate_random_graph(graph_depth, max_breadth, divergence_cutoff)

@@ -1,10 +1,11 @@
 import logging
 from abc import ABC, abstractmethod
 from random import Random
-from typing import Sequence, Callable, List, Optional
+from typing import Sequence, Callable, List
 
 from pure_graph_of_thoughts.api.graph.operation import GraphOfOperations
 from pure_graph_of_thoughts.api.operation import Operation
+from .baseline_config import BaselineConfig
 from .baseline_result import BaselineResult
 from .graph_generator import GraphGenerator
 
@@ -14,10 +15,7 @@ class BaselineStrategy(ABC):
     Represents a baseline strategy to generate a static graph of operations.
     """
 
-    _MAX_DEPTH: int = 8
-    _MAX_BREADTH: int = 8
-    _DIVERGENCE_CUTOFF_FACTOR: float = 0.4
-
+    _config: BaselineConfig
     _operations: Sequence[Operation]
     _graph_generator: GraphGenerator
     _graph_evaluator: Callable[[GraphOfOperations, int], BaselineResult]
@@ -25,23 +23,17 @@ class BaselineStrategy(ABC):
     _random: Random
     _logger: logging.Logger
 
-    def __init__(
-            self,
-            operations: Sequence[Operation],
-            graph_evaluator: Callable[[GraphOfOperations, int], BaselineResult],
-            seed: Optional[int] = None
-    ) -> None:
+    def __init__(self, config: BaselineConfig) -> None:
         """
         Instantiates a new baseline strategy.
-        :param operations: operations
-        :param graph_evaluator: graph evaluator to evaluate a generated graph of operations
-        :param seed: seed for random number generator
+        :param config: baseline strategy configuration
         """
-        self._operations = operations
-        self._graph_generator = GraphGenerator(operations, seed)
-        self._graph_evaluator = graph_evaluator
+        self.config = config
+        self._operations = config.operations
+        self._graph_generator = GraphGenerator(config.operations, config.seed)
+        self._graph_evaluator = config.graph_evaluator
         self._graph_candidates = []
-        self._random = Random(seed)
+        self._random = Random(config.seed)
         self._logger = logging.getLogger(self.__class__.__name__)
 
     @abstractmethod
