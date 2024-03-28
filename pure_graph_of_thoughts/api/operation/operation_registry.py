@@ -1,10 +1,9 @@
-from dataclasses import dataclass, field
-from typing import Set, Sequence, Mapping, List
+from dataclasses import dataclass
+from typing import Set, Sequence, Mapping
 
 from .evaluator import Evaluator
 from .operation import Operation
 from .operation_type import OperationType
-
 
 InvertedOperationIndex = Mapping[Operation, int]
 """Represents a mapping between operations and their indices."""
@@ -23,7 +22,8 @@ class OperationRegistry:
     """The evaluator for ground truth evaluation"""
 
     def __post_init__(self) -> None:
-        assert len(set(self.operations)) == len(self.operations), 'All operations must be unique'
+        if len(set(self.operations)) != len(self.operations):
+            raise OperationRegistryException('All operations must be unique')
 
     @property
     def supported_types(self) -> Set[OperationType]:
@@ -39,3 +39,12 @@ class OperationRegistry:
     @property
     def n_operations(self) -> int:
         return len(self.operations)
+
+
+class OperationRegistryException(Exception):
+    """
+    An exception raised when an operation registry cannot be constructed.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)

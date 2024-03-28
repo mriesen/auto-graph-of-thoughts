@@ -75,8 +75,11 @@ class GraphOfOperations(Graph[OperationNode]):
             for successor_node in successor_nodes
             for _ in range(successor_node.operation.n_inputs)
         ]
-        assert len(predecessor_nodes_by_output_index) == len(successor_nodes_by_input_index), \
-            'The number of outputs of the predecessor nodes must match the number of inputs of the successor nodes'
+        if len(predecessor_nodes_by_output_index) != len(successor_nodes_by_input_index):
+            raise GraphOfOperationsException(
+                    'The number of outputs of the predecessor nodes '
+                    'must match the number of inputs of the successor nodes'
+            )
 
         for i, successor_node in enumerate(successor_nodes_by_input_index):
             predecessor_nodes_by_output_index[i].append(successor_node)
@@ -101,3 +104,12 @@ class GraphOfOperations(Graph[OperationNode]):
             ) for node in schema.nodes
         ]
         return cls._construct_graph(nodes, schema.edges)
+
+
+class GraphOfOperationsException(Exception):
+    """
+    An exception raised in context of a graph of operations.
+    """
+
+    def __init__(self, message: str):
+        super().__init__(message)

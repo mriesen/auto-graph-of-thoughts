@@ -22,7 +22,8 @@ class Prompt:
     """The examples to provide to the language model for in-context learning"""
 
     def __post_init__(self) -> None:
-        assert 'JSON' in self.instruction, 'Instruction must contain the word "JSON"'
+        if 'JSON' not in self.instruction:
+            raise PromptException('Instruction must contain the word "JSON"')
 
     def __str__(self) -> str:
         return dedent(
@@ -45,3 +46,12 @@ class Prompt:
 
     def __hash__(self) -> int:
         return hash((self.__str__()))
+
+
+class PromptException(Exception):
+    """
+    An exception raised due to a prompt.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)

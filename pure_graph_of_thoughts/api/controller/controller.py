@@ -2,7 +2,6 @@ import logging
 from abc import ABC
 from typing import Sequence
 
-from .controller_exception import ControllerException
 from ..graph.operation import OperationNode
 from ..graph.thought import ThoughtNode
 from ..language_model import LanguageModel
@@ -108,3 +107,12 @@ class Controller(ABC):
             score = score_operation.score(previous_state, current_state)
             return Thought(state=current_state, score=score, origin=operation_node)
         raise ControllerException(f'Score operation is not supported: {type(score_operation)}')
+
+
+class ControllerException(Exception):
+    """
+    An exception raised in a controller.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
