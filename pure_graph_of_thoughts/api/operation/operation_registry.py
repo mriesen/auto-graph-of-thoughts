@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 from typing import Set, Sequence, Mapping
 
+from .operation_key import OperationKey
 from .evaluator import Evaluator
 from .operation import Operation
 from .operation_type import OperationType
 
-InvertedOperationIndex = Mapping[Operation, int]
+InvertedOperationIndex = Mapping[OperationKey, int]
 """Represents a mapping between operations and their indices."""
 
 
@@ -33,7 +34,7 @@ class OperationRegistry:
     @property
     def inverted_operation_index(self) -> InvertedOperationIndex:
         return {
-            operation: index for index, operation in enumerate(self.operations)
+            operation.key: index for index, operation in enumerate(self.operations)
         }
 
     @property

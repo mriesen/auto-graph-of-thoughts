@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Self, Sequence, Dict, Any, List, Mapping
 
 from .operation_graph_schema import OperationGraphSchema
-from .operation_matrix import OperationMatrix
+from .operation_array import OperationArray
 from .operation_node import OperationNode
 from .operation_node_schema import OperationNodeSchema
 from ..graph import Graph
@@ -18,10 +18,10 @@ class GraphOfOperations(Graph[OperationNode, OperationGraphSchema]):
     """
 
     @property
-    def operation_matrix(self) -> OperationMatrix:
+    def operation_array(self) -> OperationArray:
         """
-        Returns the operation matrix of the graph.
-        :return: operation matrix
+        Returns the operation array of the graph.
+        :return: operation array
         """
         return [
             [node.operation for node in layer]
@@ -29,17 +29,17 @@ class GraphOfOperations(Graph[OperationNode, OperationGraphSchema]):
         ]
 
     @classmethod
-    def from_operation_matrix(cls, operation_matrix: OperationMatrix) -> Self:
+    def from_operation_array(cls, operation_array: OperationArray) -> Self:
         """
-        Creates a graph of operations from a given operation matrix.
-        :param operation_matrix: operation matrix
+        Creates a graph of operations from a given operation array.
+        :param operation_array: operation array
         :return: created graph of operations
         """
 
-        source_operation: Operation = operation_matrix[0][0]
+        source_operation: Operation = operation_array[0][0]
         source_node: OperationNode = OperationNode.of(source_operation)
         predecessor_nodes: Sequence[OperationNode] = [source_node]
-        for operation_layer in operation_matrix[1:]:
+        for operation_layer in operation_array[1:]:
             successor_nodes: Sequence[OperationNode] = [
                 OperationNode.of(operation) for operation in operation_layer
             ]
@@ -47,7 +47,7 @@ class GraphOfOperations(Graph[OperationNode, OperationGraphSchema]):
         return cls.from_source(source_node)
 
     def __deepcopy__(self, memo: Dict[Any, Any]) -> Self:
-        return self.from_operation_matrix(self.operation_matrix)
+        return self.from_operation_array(self.operation_array)
 
     def clone(self) -> Self:
         """

@@ -64,10 +64,10 @@ class Graph(Sealable, ABC, Generic[N, S]):
         layers: Dict[int, List[N]] = defaultdict(list)
         for node in self.nodes:
             layers[node.depth].append(node)
-        layer_matrix = [
+        layer_array = [
             layer for depth, layer in sorted(layers.items())
         ]
-        return layer_matrix
+        return layer_array
 
     @property
     def depth(self) -> int:

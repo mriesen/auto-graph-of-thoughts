@@ -1,5 +1,5 @@
 from .graph_of_operations import GraphOfOperations, GraphOfOperationsException
+from .operation_array import OperationArray
 from .operation_graph_schema import OperationGraphSchema
-from .operation_matrix import OperationMatrix
 from .operation_node import OperationNode
 from .operation_node_schema import OperationNodeSchema

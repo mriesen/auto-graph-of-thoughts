@@ -103,12 +103,12 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
         if graph is None:
             return self._create_complete_graph()
 
-        operation_matrix = graph.operation_matrix
+        operation_array = graph.operation_array
 
-        prev_depth = len(operation_matrix)
+        prev_depth = len(operation_array)
 
         clip_depth = self._random.randint(1, prev_depth)
-        clip_layers = operation_matrix[:clip_depth - 1]
+        clip_layers = operation_array[:clip_depth - 1]
 
         if len(clip_layers) == 0:
             return self._create_neighbor()

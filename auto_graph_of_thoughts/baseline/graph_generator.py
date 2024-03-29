@@ -4,8 +4,7 @@ from itertools import product
 from random import Random
 from typing import Sequence, Mapping, Set, Dict, Optional, Callable
 
-from pure_graph_of_thoughts.api.graph.operation import GraphOfOperations
-from pure_graph_of_thoughts.api.graph.operation.operation_matrix import OperationMatrix
+from pure_graph_of_thoughts.api.graph.operation import GraphOfOperations, OperationArray
 from pure_graph_of_thoughts.api.operation import Operation
 
 
@@ -40,7 +39,7 @@ class GraphGenerator(ABC):
         """
         single_input_operations = list(self._operations_by_n_inputs[1])
         source_operation = self._random.choice(single_input_operations)
-        operation_matrix: OperationMatrix = [
+        operation_array: OperationArray = [
             [source_operation]
         ]
         graph_of_operations = self.generate_random_graph_layers(
@@ -48,7 +47,7 @@ class GraphGenerator(ABC):
                 graph_depth,
                 max_breadth,
                 divergence_cutoff,
-                operation_matrix
+                operation_array
         )
         if graph_of_operations is None:
             self._logger.debug('Generated graph has more than one sink, re-generating')
@@ -62,7 +61,7 @@ class GraphGenerator(ABC):
             depth_end: int,
             max_breadth: int,
             divergence_cutoff: int,
-            initial_operation_matrix: OperationMatrix
+            initial_operation_array: OperationArray
     ) -> Optional[GraphOfOperations]:
         """
         Generates random graph layers.
@@ -70,33 +69,33 @@ class GraphGenerator(ABC):
         :param depth_end: end depth
         :param max_breadth: maximum breadth of the graph
         :param divergence_cutoff: divergence cutoff depth
-        :param initial_operation_matrix: initial operation matrix
+        :param initial_operation_array: initial operation array
         :return: generated graph of operations
         """
 
-        operation_matrix: OperationMatrix = initial_operation_matrix
+        operation_array: OperationArray = initial_operation_array
         for depth in range(depth_start, depth_end):
             divergence = depth <= divergence_cutoff
             expect_single_output = depth == depth_end
-            operation_matrix_result: Optional[OperationMatrix] = self._generate_next_layer(
-                    operation_matrix,
+            operation_array_result: Optional[OperationArray] = self._generate_next_layer(
+                    operation_array,
                     max_breadth,
                     divergence,
                     expect_single_output
             )
-            if operation_matrix_result is None:
+            if operation_array_result is None:
                 return None
-            operation_matrix = operation_matrix_result
-        return GraphOfOperations.from_operation_matrix(operation_matrix)
+            operation_array = operation_array_result
+        return GraphOfOperations.from_operation_array(operation_array)
 
     def _generate_next_layer(
             self,
-            operation_matrix: OperationMatrix,
+            operation_array: OperationArray,
             max_breadth: int,
             divergence: bool,
             expect_single_output: bool
-    ) -> Optional[OperationMatrix]:
-        predecessor_operations: Sequence[Operation] = operation_matrix[-1]
+    ) -> Optional[OperationArray]:
+        predecessor_operations: Sequence[Operation] = operation_array[-1]
         successor_operation_candidates = self._next_operation_candidates(
                 predecessor_operations,
                 max_breadth,
@@ -107,7 +106,7 @@ class GraphGenerator(ABC):
             return None
         successor_operations: Sequence[Operation] = self._random.choice(successor_operation_candidates)
 
-        return list(operation_matrix) + [successor_operations]
+        return list(operation_array) + [successor_operations]
 
     def _next_operation_candidates(
             self,
