@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
 from typing import Sequence, Callable, Optional
 
-from auto_graph_of_thoughts.baseline import BaselineResult
 from pure_graph_of_thoughts.api.graph.operation import GraphOfOperations
 from pure_graph_of_thoughts.api.operation import Operation
+from .model import BaselineIterationResult
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -13,19 +13,19 @@ class BaselineConfig:
     """
 
     max_breadth: int
-    """The maximum breadth of the graph."""
+    """The maximum breadth of the graph"""
 
     max_depth: int
-    """The maximum depth of the graph."""
+    """The maximum depth of the graph"""
 
     divergence_cutoff_factor: float
-    """The factor used to calculate the divergence cutoff."""
+    """The factor used to calculate the divergence cutoff"""
 
     operations: Sequence[Operation]
-    """The list of available operations."""
+    """The list of available operations"""
 
-    graph_evaluator: Callable[[GraphOfOperations, int], BaselineResult]
-    """The graph evaluator to evaluate a generated graph of operations."""
+    graph_evaluator: Callable[[GraphOfOperations, int], BaselineIterationResult]
+    """The graph evaluator to evaluate a generated graph of operations"""
 
     seed: Optional[int] = field(default=None)
-    """The seed for random number generator."""
+    """The seed for random number generator"""

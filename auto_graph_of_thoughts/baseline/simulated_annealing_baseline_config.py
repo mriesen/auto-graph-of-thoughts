@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from auto_graph_of_thoughts.baseline.baseline_config import BaselineConfig
+from .baseline_config import BaselineConfig
 
 
 @dataclass(frozen=True, kw_only=True)

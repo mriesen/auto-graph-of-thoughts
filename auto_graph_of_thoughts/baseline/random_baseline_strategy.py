@@ -1,8 +1,8 @@
 from math import floor
-from typing import List, Sequence
+from typing import List, Sequence, Optional
 
-from .baseline_result import BaselineResult
 from .baseline_strategy import BaselineStrategy
+from .model import BaselineResultSummary, BaselineIterationResult
 
 
 class RandomBaselineStrategy(BaselineStrategy):
@@ -11,21 +11,36 @@ class RandomBaselineStrategy(BaselineStrategy):
     Generates a random graph of operations and evaluates it with the given graph evaluator.
     """
 
-    def generate(self, max_iterations: int, stop_on_first_valid: bool = False) -> BaselineResult:
-        baseline_results: List[BaselineResult] = []
+    def generate(self, max_iterations: int, stop_on_first_valid: bool = False) -> BaselineResultSummary:
+        iteration_results: List[BaselineIterationResult] = []
         for i in range(1, max_iterations + 1):
-            current_baseline_result = self._generate_single(i)
-            if stop_on_first_valid and current_baseline_result.is_valid:
-                return current_baseline_result
-            baseline_results.append(current_baseline_result)
+            current_iteration_result = self._generate_single(i)
+            iteration_results.append(current_iteration_result)
+            if stop_on_first_valid and current_iteration_result.is_valid:
+                return BaselineResultSummary(
+                        results=iteration_results,
+                        final_result_index=iteration_results.index(current_iteration_result),
+                        max_iterations=max_iterations,
+                        stop_on_first_valid=True
+                )
 
-        valid_baseline_results: Sequence[BaselineResult] = [
-            baseline_result for baseline_result in baseline_results
-            if baseline_result.is_valid
+        valid_results: Sequence[BaselineIterationResult] = [
+            iteration_result for iteration_result in iteration_results
+            if iteration_result.is_valid
         ]
-        return min(valid_baseline_results, key=lambda baseline_result: baseline_result.cost)
+        final_result: Optional[BaselineIterationResult] = min(
+                valid_results,
+                key=lambda baseline_result: baseline_result.cost
+        ) if len(valid_results) > 0 else None
+        return BaselineResultSummary(
+                results=iteration_results,
+                final_result_index=iteration_results.index(
+                        final_result
+                ) if final_result is not None else None,
+                max_iterations=max_iterations
+        )
 
-    def _generate_single(self, iteration: int) -> BaselineResult:
+    def _generate_single(self, iteration: int) -> BaselineIterationResult:
         graph_depth = self._random.randint(1, self._config.max_depth)
         max_breadth = self._config.max_breadth
         divergence_cutoff: int = floor(graph_depth * self._config.divergence_cutoff_factor)

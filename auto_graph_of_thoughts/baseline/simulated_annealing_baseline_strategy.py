@@ -1,10 +1,9 @@
 from math import exp, floor
-from typing import Optional
+from typing import Optional, List
 
 from pure_graph_of_thoughts.api.graph.operation import GraphOfOperations
-from .baseline_result import BaselineResult
 from .baseline_strategy import BaselineStrategy
-from .baseline_strategy_exception import BaselineStrategyException
+from .model import BaselineIterationResult, BaselineResultSummary
 from .simulated_annealing_baseline_config import SimulatedAnnealingBaselineConfig
 
 
@@ -20,15 +19,22 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
     is reached and a complete re-generation is applied.
     """
 
+    _META_INFO_TEMPERATURE = 'temperature'
+    _META_INFO_ENERGY = 'energy'
+    _META_INFO_PROBABILITY = 'probability'
+    _META_INFO_HAS_HIGHEST_ENERGY = 'has_highest_energy'
+    _META_INFO_IS_SELECTED = 'is_selected'
+
     _temperature: float
     _cooling_factor: float
     _best_energy: float
-    _current_result: Optional[BaselineResult]
+    _all_results: List[BaselineIterationResult]
+    _current_result: Optional[BaselineIterationResult]
     _neighbor_regeneration_threshold: int
 
     @property
-    def current_result(self) -> Optional[BaselineResult]:
-        """The current result."""
+    def current_result(self) -> Optional[BaselineIterationResult]:
+        """The current result"""
         return self._current_result
 
     def __init__(self, config: SimulatedAnnealingBaselineConfig) -> None:
@@ -41,32 +47,57 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
         self._temperature = 1.0
         self._cooling_factor = config.cooling_factor
         self._best_energy = 0
+        self._all_results = []
         self._current_result = None
         self._neighbor_regeneration_threshold = config.neighbor_regeneration_threshold
 
-    def generate(self, max_iterations: int, stop_on_first_valid: bool = False) -> BaselineResult:
+    def generate(self, max_iterations: int, stop_on_first_valid: bool = False) -> BaselineResultSummary:
         for i in range(1, max_iterations + 1):
-            baseline_result = self._generate_single(i)
-            if stop_on_first_valid and baseline_result.is_valid:
-                return baseline_result
+            iteration_result = self._generate_single(i)
+            self._all_results.append(iteration_result)
+            if stop_on_first_valid and iteration_result.is_valid:
+                return BaselineResultSummary(
+                        results=self._all_results,
+                        final_result_index=self._all_results.index(iteration_result),
+                        max_iterations=max_iterations,
+                        stop_on_first_valid=True
+                )
 
-        if self.current_result is None:
-            raise BaselineStrategyException('Simulated Annealing Baseline Strategy did not generate a result')
-        return self.current_result
+        return BaselineResultSummary(
+                results=self._all_results,
+                final_result_index=self._all_results.index(
+                        self._current_result
+                ) if self._current_result is not None else None,
+                max_iterations=max_iterations
+        )
 
-    def _generate_single(self, iteration: int) -> BaselineResult:
+    def _generate_single(self, iteration: int) -> BaselineIterationResult:
         self._temperature *= self._cooling_factor
         neighbor_graph = self._create_neighbor(
-                self._current_result.graph_of_operations if self._current_result is not None else None
+                GraphOfOperations.from_schema(
+                        self._current_result.graph_of_operations,
+                        self._operations
+                ) if self._current_result is not None else None
         )
-        baseline_result = self._graph_evaluator(neighbor_graph, iteration)
-        energy = float(baseline_result.is_valid) / baseline_result.cost
+        iteration_result = self._graph_evaluator(neighbor_graph, iteration)
+        energy = float(iteration_result.is_valid) / iteration_result.cost
         probability: float = exp(-energy / self._temperature)
 
-        if energy > self._best_energy or self._random.random() <= probability:
-            self._current_result = baseline_result
+        has_highest_energy = energy > self._best_energy
+        is_selected = has_highest_energy or self._random.random() <= probability
 
-        return baseline_result
+        iteration_result = iteration_result.with_meta_info({
+            self._META_INFO_ENERGY: energy,
+            self._META_INFO_HAS_HIGHEST_ENERGY: has_highest_energy,
+            self._META_INFO_IS_SELECTED: is_selected,
+            self._META_INFO_TEMPERATURE: self._temperature,
+            self._META_INFO_PROBABILITY: probability
+        })
+
+        if is_selected:
+            self._current_result = iteration_result
+
+        return iteration_result
 
     def _create_neighbor(self, graph: Optional[GraphOfOperations] = None) -> GraphOfOperations:
         if graph is None:
