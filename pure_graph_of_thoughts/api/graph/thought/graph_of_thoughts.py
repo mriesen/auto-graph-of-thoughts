@@ -1,13 +1,11 @@
 from dataclasses import dataclass
-from typing import Self, Sequence, Mapping
+from typing import Self
 
 from .thought_graph_schema import ThoughtGraphSchema
 from .thought_node import ThoughtNode
 from .thought_node_schema import ThoughtNodeSchema
 from ..graph import Graph
 from ..graph_schema import GraphSchema
-from ..operation import OperationNode
-from ...internal.id import Id
 from ...state import State
 from ...thought import Thought
 
@@ -29,25 +27,19 @@ class GraphOfThoughts(Graph[ThoughtNode, ThoughtGraphSchema]):
         return cls.from_source(source)
 
     @classmethod
-    def from_schema(
-            cls, schema: GraphSchema[ThoughtNodeSchema], operation_nodes: Sequence[OperationNode]
-    ) -> Self:
+    def from_schema(cls, schema: GraphSchema[ThoughtNodeSchema]) -> Self:
         """
         Constructs a graph of thoughts from a given graph schema and a sequence of operation nodes.
         :param schema: graph schema
-        :param operation_nodes: operation nodes
         :return: constructed graph of thoughts
         """
-        operation_node_by_id: Mapping[Id, OperationNode] = {
-            operation_node.id: operation_node for operation_node in operation_nodes
-        }
         nodes = [
             ThoughtNode.of(
                     id=node.id,
                     thought=Thought(
                             state=node.state,
                             score=node.score,
-                            origin=operation_node_by_id[node.origin_id] if node.origin_id is not None else None,
+                            origin_id=node.origin_id,
                     )
             ) for node in schema.nodes
         ]

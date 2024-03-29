@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
-from ..graph.operation import OperationNode
+from ..internal.id import Id
 from ..state import State
 
 
@@ -11,8 +11,8 @@ class Thought:
     Represents a thought.
     """
 
-    origin: Optional[OperationNode] = field(default=None, repr=False)
-    """The origin of the thought"""
+    origin_id: Optional[Id] = field(default=None)
+    """The ID of the thought's origin"""
 
     state: State
     """The internal state of the thought"""

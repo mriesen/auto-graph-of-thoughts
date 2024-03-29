@@ -73,12 +73,12 @@ class Controller(ABC):
                     for output_state in output_states
                 ]
             return [
-                Thought(state=output_state, origin=operation_node) for output_state in output_states
+                Thought(state=output_state, origin_id=operation_node.id) for output_state in output_states
             ]
         elif isinstance(operation, ExecOperation):
             output_states = operation.execute(input_states)
             return [
-                Thought(state=output_state, origin=operation_node) for output_state in output_states
+                Thought(state=output_state, origin_id=operation_node.id) for output_state in output_states
             ]
         raise ControllerException(f'Operation is not supported: {type(operation)}')
 
@@ -102,10 +102,10 @@ class Controller(ABC):
             input_state = score_operation.transform_before(current_state)
             output_state = self._language_model.prompt(score_operation.prompt, input_state)
             score = score_operation.transform_after(output_state)
-            return Thought(state=current_state, score=score, origin=operation_node)
+            return Thought(state=current_state, score=score, origin_id=operation_node.id)
         elif isinstance(score_operation, ScoreExecOperation):
             score = score_operation.score(previous_state, current_state)
-            return Thought(state=current_state, score=score, origin=operation_node)
+            return Thought(state=current_state, score=score, origin_id=operation_node.id)
         raise ControllerException(f'Score operation is not supported: {type(score_operation)}')
 
 

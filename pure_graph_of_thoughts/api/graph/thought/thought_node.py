@@ -33,10 +33,9 @@ class ThoughtNode(Node):
         return cls(_thought=thought, _predecessors=[], _successors=[])
 
     def to_schema(self) -> ThoughtNodeSchema:
-        origin_id: Optional[Id] = self.thought.origin.id if self.thought.origin is not None else None
         return ThoughtNodeSchema(
                 id=self.id,
-                origin_id=origin_id,
+                origin_id=self.thought.origin_id,
                 state=self.thought.state,
                 score=self.thought.score
         )
