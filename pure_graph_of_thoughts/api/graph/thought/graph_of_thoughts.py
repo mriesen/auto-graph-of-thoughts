@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Self, Sequence, Mapping
 
+from .thought_graph_schema import ThoughtGraphSchema
 from .thought_node import ThoughtNode
 from .thought_node_schema import ThoughtNodeSchema
 from ..graph import Graph
@@ -12,7 +13,7 @@ from ...thought import Thought
 
 
 @dataclass
-class GraphOfThoughts(Graph[ThoughtNode]):
+class GraphOfThoughts(Graph[ThoughtNode, ThoughtGraphSchema]):
     """
     Represents a graph of thoughts.
     """
@@ -51,3 +52,6 @@ class GraphOfThoughts(Graph[ThoughtNode]):
             ) for node in schema.nodes
         ]
         return cls._construct_graph(nodes, schema.edges)
+
+    def to_schema(self) -> ThoughtGraphSchema:
+        return super()._to_schema(ThoughtGraphSchema)

@@ -1,8 +1,8 @@
 from dataclasses import dataclass, asdict
-from typing import Dict, Any, Self, Optional
+from typing import Dict, Any, Self
 
 from .operation_type import OperationType
-from ..schema import Schema, SchemaTypeMap
+from ..schema import Schema
 
 
 @dataclass(frozen=True)
@@ -28,7 +28,7 @@ class OperationKey(Schema):
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any], type_map: Optional[SchemaTypeMap] = None) -> Self:
+    def from_dict(cls, data: Dict[str, Any]) -> Self:
         return cls(
                 name=data['name'],
                 n_inputs=data['n_inputs'],

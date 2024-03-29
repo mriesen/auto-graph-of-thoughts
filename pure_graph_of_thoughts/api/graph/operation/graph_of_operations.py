@@ -2,6 +2,7 @@ import copy
 from dataclasses import dataclass
 from typing import Self, Sequence, Dict, Any, List, Mapping
 
+from .operation_graph_schema import OperationGraphSchema
 from .operation_matrix import OperationMatrix
 from .operation_node import OperationNode
 from .operation_node_schema import OperationNodeSchema
@@ -11,7 +12,7 @@ from ...operation import Operation, OperationKey
 
 
 @dataclass
-class GraphOfOperations(Graph[OperationNode]):
+class GraphOfOperations(Graph[OperationNode, OperationGraphSchema]):
     """
     Represents a graph of operations.
     """
@@ -54,6 +55,9 @@ class GraphOfOperations(Graph[OperationNode]):
         :return: deep copy of the operations
         """
         return copy.deepcopy(self)
+
+    def to_schema(self) -> OperationGraphSchema:
+        return super()._to_schema(OperationGraphSchema)
 
     @staticmethod
     def _connect_layer(

@@ -6,12 +6,15 @@ import networkx as nx
 from matplotlib import pyplot as plt
 from networkx.drawing.nx_agraph import graphviz_layout
 
-from ..api.graph import Graph, Node
+from ..api.graph import Graph, Node, GraphSchema
 from ..api.graph.operation import OperationNode, GraphOfOperations
 from ..api.graph.thought import ThoughtNode, GraphOfThoughts
 
 _N = TypeVar('_N', bound=Node)
 """The type of node"""
+
+_S = TypeVar('_S', bound=GraphSchema[Any])
+"""The graph schema type"""
 
 _T = TypeVar('_T', bound=Any)
 """The type of the visual representation of the node"""
@@ -28,7 +31,7 @@ class _GraphVisualizer(Generic[_T, _N]):
 
     @staticmethod
     def _create_networkx_graph(
-            graph: Graph[_N],
+            graph: Graph[_N, _S],
             transform_node: Callable[[_N], _T] = lambda node: cast(_T, node)
     ) -> nx.DiGraph:  # type: ignore
         nx_graph = nx.DiGraph()  # type: ignore
@@ -39,7 +42,7 @@ class _GraphVisualizer(Generic[_T, _N]):
         nx_graph.add_edges_from(edges)
         return nx_graph
 
-    def plot_graph(self, graph: Graph[_N], custom_transform_node: Optional[Callable[[_N], _T]] = None) -> None:
+    def plot_graph(self, graph: Graph[_N, _S], custom_transform_node: Optional[Callable[[_N], _T]] = None) -> None:
         """
         Plots a given graph.
         :param graph: graph to plot

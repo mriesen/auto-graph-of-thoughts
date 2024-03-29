@@ -3,7 +3,6 @@ from typing import Optional, Dict, Any, Self
 
 from ..node_schema import NodeSchema
 from ...internal.id import Id
-from ...schema import SchemaTypeMap
 from ...state import State
 
 
@@ -23,5 +22,5 @@ class ThoughtNodeSchema(NodeSchema):
     """The score of the thought"""
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any], type_map: Optional[SchemaTypeMap] = None) -> Self:
+    def from_dict(cls, data: Dict[str, Any]) -> Self:
         return cls(**data)

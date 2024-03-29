@@ -1,8 +1,8 @@
 import copy
-from abc import ABC
+from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import TypeVar, Generic, Self, Set, Tuple, Sequence, Dict, List, Mapping
+from typing import TypeVar, Generic, Self, Set, Tuple, Sequence, Dict, List, Mapping, Type, Any
 
 from .graph_schema import GraphSchema
 from .node import Node
@@ -13,12 +13,12 @@ from ..internal.seal import Sealable
 N = TypeVar('N', bound=Node)
 """The node type"""
 
-S = TypeVar('S', bound=NodeSchema)
-"""The node schema type"""
+S = TypeVar('S', bound=GraphSchema[Any])
+"""The graph schema type"""
 
 
 @dataclass(kw_only=True)
-class Graph(Sealable, ABC, Generic[N]):
+class Graph(Sealable, ABC, Generic[N, S]):
     """
     Represents a graph.
     """
@@ -81,7 +81,11 @@ class Graph(Sealable, ABC, Generic[N]):
         super().seal()
         self._source.seal()
 
-    def to_schema(self) -> GraphSchema[NodeSchema]:
+    @abstractmethod
+    def to_schema(self) -> S:
+        pass
+
+    def _to_schema(self, schema_cls: Type[S]) -> S:
         """
         Converts the graph into its schematic form.
         :return: graph schema
@@ -93,7 +97,7 @@ class Graph(Sealable, ABC, Generic[N]):
         nodes: Sequence[NodeSchema] = [
             node.to_schema() for node in self.nodes
         ]
-        return GraphSchema(edges=edges, nodes=nodes)
+        return schema_cls(edges=edges, nodes=nodes)
 
     @classmethod
     def from_source(cls, source: N) -> Self:

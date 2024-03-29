@@ -1,9 +1,8 @@
 from dataclasses import dataclass
-from typing import Dict, Any, Self, Optional
+from typing import Dict, Any, Self
 
 from ..node_schema import NodeSchema
 from ...operation import OperationKey
-from ...schema import SchemaTypeMap
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -16,7 +15,7 @@ class OperationNodeSchema(NodeSchema):
     """The key of the operation."""
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any], type_map: Optional[SchemaTypeMap] = None) -> Self:
+    def from_dict(cls, data: Dict[str, Any]) -> Self:
         operation_key = data['operation_key']
         return cls(
                 id=data['id'],

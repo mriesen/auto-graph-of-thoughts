@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from enum import Enum
 from typing import Any
 
@@ -11,6 +12,8 @@ class JsonSchemaEncoder(json.JSONEncoder):
     """
 
     def default(self, obj: Any) -> Any:
+        if isinstance(obj, datetime):
+            return obj.isoformat()
         if isinstance(obj, Enum):
             return obj.name
         if isinstance(obj, Schema):
