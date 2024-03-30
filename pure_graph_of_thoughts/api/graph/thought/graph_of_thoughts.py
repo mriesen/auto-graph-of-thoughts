@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Self
+from typing import Self, Dict, Any
 
 from .thought_graph_schema import ThoughtGraphSchema
 from .thought_node import ThoughtNode
@@ -47,3 +47,6 @@ class GraphOfThoughts(Graph[ThoughtNode, ThoughtGraphSchema]):
 
     def to_schema(self) -> ThoughtGraphSchema:
         return super()._to_schema(ThoughtGraphSchema)
+
+    def __deepcopy__(self, memo: Dict[Any, Any]) -> Self:
+        return self.from_schema(self.to_schema())

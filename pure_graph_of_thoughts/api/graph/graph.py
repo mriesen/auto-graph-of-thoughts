@@ -9,6 +9,7 @@ from .node import Node
 from .node_schema import NodeSchema
 from ..internal.id import Id
 from ..internal.seal import Sealable
+from ..operation import Operation
 
 N = TypeVar('N', bound=Node)
 """The node type"""
@@ -64,10 +65,9 @@ class Graph(Sealable, ABC, Generic[N, S]):
         layers: Dict[int, List[N]] = defaultdict(list)
         for node in self.nodes:
             layers[node.depth].append(node)
-        layer_array = [
+        return [
             layer for depth, layer in sorted(layers.items())
         ]
-        return layer_array
 
     @property
     def depth(self) -> int:
@@ -114,6 +114,7 @@ class Graph(Sealable, ABC, Generic[N, S]):
         Constructs a graph out of a given sequence of nodes and edges.
         :param nodes: nodes of the graph
         :param edges: edges of the graph
+        :param operations: available operations
         :return: constructed graph
         """
         nodes_by_id: Mapping[Id, N] = {
@@ -125,9 +126,7 @@ class Graph(Sealable, ABC, Generic[N, S]):
             current_node.append(successor_node)
 
         source_node = [node for node in nodes if node.is_source][0]
-        instance: Self = cls.from_source(source_node)
-        instance.seal()
-        return instance
+        return cls.from_source(source_node)
 
     @staticmethod
     def _get_nodes(current_node: N) -> Sequence[N]:

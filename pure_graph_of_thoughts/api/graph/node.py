@@ -76,6 +76,25 @@ class Node(AutoIdentifiable, Sealable, ABC):
         """
         return [self.append(successor) for successor in successors]
 
+    @mutating(scope=MutationScope.ALL)
+    def remove_successor(self, successor: Self) -> Self:
+        """
+        Removes a given successor from the current node.
+        :param successor: successor to remove
+        :return: current node
+        """
+        self._successors.remove(successor)
+        return self
+
+    def remove_all_successors(self) -> Self:
+        """
+        Removes all successors from the current node.
+        :return: current node
+        """
+        for successor in self.successors:
+            self.remove_successor(successor)
+        return self
+
     def seal(self) -> None:
         if not self.is_sealed:
             super().seal()

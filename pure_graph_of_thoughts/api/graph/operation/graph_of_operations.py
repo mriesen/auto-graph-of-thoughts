@@ -2,12 +2,13 @@ import copy
 from dataclasses import dataclass
 from typing import Self, Sequence, Dict, Any, List, Mapping
 
-from .operation_graph_schema import OperationGraphSchema
 from .operation_array import OperationArray
+from .operation_graph_schema import OperationGraphSchema
 from .operation_node import OperationNode
 from .operation_node_schema import OperationNodeSchema
 from ..graph import Graph
 from ..graph_schema import GraphSchema
+from ...internal.seal import mutating, MutationScope
 from ...operation import Operation, OperationKey
 
 
@@ -46,15 +47,33 @@ class GraphOfOperations(Graph[OperationNode, OperationGraphSchema]):
             predecessor_nodes = cls._connect_layer(predecessor_nodes, successor_nodes)
         return cls.from_source(source_node)
 
-    def __deepcopy__(self, memo: Dict[Any, Any]) -> Self:
-        return self.from_operation_array(self.operation_array)
+    @mutating(scope=MutationScope.SELF)
+    def append_layer(self, successor_nodes: Sequence[OperationNode]) -> None:
+        """
+        Appends a layer of nodes to the current graph.
+        :param successor_nodes: successor nodes to append
+        """
+        predecessor_nodes: Sequence[OperationNode] = self.layers[-1]
+        self._connect_layer(predecessor_nodes, successor_nodes)
 
-    def clone(self) -> Self:
+    @mutating(scope=MutationScope.SELF)
+    def remove_layer(self, depth: int) -> None:
         """
-        Clones the current graph of operations and returns a deep copy of the graph of operations.
-        :return: deep copy of the operations
+        Removes the layer at the given depth from the graph.
+        This causes the removal of all successive layers as well.
+        :param depth: depth to remove
         """
-        return copy.deepcopy(self)
+        if depth == 0:
+            raise GraphOfOperationsException('Cannot remove layer at depth 0')
+        if depth > self.depth:
+            raise GraphOfOperationsException('Layer to remove at the given depth does not exist')
+        operation_nodes: Sequence[OperationNode] = self.layers[depth - 1]
+        for operation_node in operation_nodes:
+            operation_node.remove_all_successors()
+
+    def __deepcopy__(self, memo: Dict[Any, Any]) -> Self:
+        operations: Sequence[Operation] = [node.operation for node in self.nodes]
+        return self.from_schema(self.to_schema(), operations)
 
     def to_schema(self) -> OperationGraphSchema:
         return super()._to_schema(OperationGraphSchema)

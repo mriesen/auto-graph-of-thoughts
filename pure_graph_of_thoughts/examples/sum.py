@@ -114,7 +114,10 @@ sum_list_registry = OperationRegistry(
 
 
 def _create_sum_list_graph_of_operations_8() -> GraphOfOperations:
-    return GraphOfOperations.from_source(OperationNode.of(op_sum))
+    source = OperationNode.of(op_sum)
+    graph_of_operations = GraphOfOperations.from_source(source)
+    graph_of_operations.seal()
+    return graph_of_operations
 
 
 sum_list_graph_of_operations_8: GraphOfOperations = _create_sum_list_graph_of_operations_8()
@@ -130,7 +133,9 @@ def _create_sum_list_graph_of_operations_16() -> GraphOfOperations:
 
     aggregate.append_operation(op_sum)
 
-    return GraphOfOperations.from_source(source)
+    graph_of_operations = GraphOfOperations.from_source(source)
+    graph_of_operations.seal()
+    return graph_of_operations
 
 
 sum_list_graph_of_operations_16: GraphOfOperations = _create_sum_list_graph_of_operations_16()
@@ -154,7 +159,9 @@ def _create_sum_list_graph_of_operations_32() -> GraphOfOperations:
 
     aggregate_outer.append_operation(op_sum)
 
-    return GraphOfOperations.from_source(source)
+    graph_of_operations = GraphOfOperations.from_source(source)
+    graph_of_operations.seal()
+    return graph_of_operations
 
 
 sum_list_graph_of_operations_32: GraphOfOperations = _create_sum_list_graph_of_operations_32()
