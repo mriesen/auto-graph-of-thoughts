@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from random import Random
-from typing import Sequence, Callable, List
+from typing import Sequence, Callable, List, Optional
 
 from pure_graph_of_thoughts.api.graph.operation import GraphOfOperations
 from pure_graph_of_thoughts.api.operation import Operation
@@ -18,7 +18,7 @@ class BaselineStrategy(ABC):
     _config: BaselineConfig
     _operations: Sequence[Operation]
     _graph_generator: GraphGenerator
-    _graph_evaluator: Callable[[GraphOfOperations, int], BaselineIterationResult]
+    _evaluate_graph: Callable[[GraphOfOperations, int], BaselineIterationResult]
     _graph_candidates: List[GraphOfOperations]
     _random: Random
     _logger: logging.Logger
@@ -31,7 +31,7 @@ class BaselineStrategy(ABC):
         self._config = config
         self._operations = config.operations
         self._graph_generator = GraphGenerator(config.operations, config.seed)
-        self._graph_evaluator = config.graph_evaluator
+        self._evaluate_graph = config.evaluate_graph
         self._graph_candidates = []
         self._random = Random(config.seed)
         self._logger = logging.getLogger(self.__class__.__name__)
@@ -54,3 +54,19 @@ class BaselineStrategy(ABC):
         :return: baseline result
         """
         pass
+
+    @staticmethod
+    def _find_valid_min_cost(iteration_results: Sequence[BaselineIterationResult]) -> Optional[BaselineIterationResult]:
+        """
+        Finds the valid iteration result with the lowest cost.
+        :param iteration_results: iteration results
+        :return: valid iteration result with the lowest cost (if present)
+        """
+        valid_results: Sequence[BaselineIterationResult] = [
+            iteration_result for iteration_result in iteration_results
+            if iteration_result.is_valid
+        ]
+        return min(
+                valid_results,
+                key=lambda baseline_result: baseline_result.cost
+        ) if len(valid_results) > 0 else None

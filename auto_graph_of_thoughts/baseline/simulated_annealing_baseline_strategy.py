@@ -79,7 +79,7 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
                         self._operations
                 ) if self._current_result is not None else None
         )
-        iteration_result = self._graph_evaluator(neighbor_graph, iteration)
+        iteration_result = self._evaluate_graph(neighbor_graph, iteration)
         energy = float(iteration_result.is_valid) / iteration_result.cost
         probability: float = exp(-energy / self._temperature)
 

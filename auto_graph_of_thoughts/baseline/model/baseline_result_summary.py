@@ -27,6 +27,10 @@ class BaselineResultSummary(Schema):
     created_at: datetime = field(default_factory=datetime.now)
     """The timestamp of the baseline result summary creation"""
 
+    @property
+    def final_result(self) -> Optional[BaselineIterationResult]:
+        return self.results[self.final_result_index] if self.final_result_index is not None else None
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> Self:
         return cls(

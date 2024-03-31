@@ -24,7 +24,7 @@ class BaselineConfig:
     operations: Sequence[Operation]
     """The list of available operations"""
 
-    graph_evaluator: Callable[[GraphOfOperations, int], BaselineIterationResult]
+    evaluate_graph: Callable[[GraphOfOperations, int], BaselineIterationResult]
     """The graph evaluator to evaluate a generated graph of operations"""
 
     seed: Optional[int] = field(default=None)

@@ -4,7 +4,7 @@ from itertools import product
 from random import Random
 from typing import Sequence, Mapping, Set, Dict, Optional, Callable
 
-from pure_graph_of_thoughts.api.graph.operation import GraphOfOperations, OperationArray
+from pure_graph_of_thoughts.api.graph.operation import GraphOfOperations, OperationArray, OperationNode
 from pure_graph_of_thoughts.api.operation import Operation
 
 
@@ -87,6 +87,16 @@ class GraphGenerator(ABC):
                 return None
             operation_array = operation_array_result
         return GraphOfOperations.from_operation_array(operation_array)
+
+    def generate_singleton_graph(self, operation: Operation) -> GraphOfOperations:
+        """
+        Generates a graph of operations with a single operation node.
+        :param operation: operation
+        :return: singleton graph of operations
+        """
+        return GraphOfOperations.from_source(
+                OperationNode.of(operation)
+        )
 
     def _generate_next_layer(
             self,

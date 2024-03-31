@@ -24,14 +24,7 @@ class RandomBaselineStrategy(BaselineStrategy):
                         stop_on_first_valid=True
                 )
 
-        valid_results: Sequence[BaselineIterationResult] = [
-            iteration_result for iteration_result in iteration_results
-            if iteration_result.is_valid
-        ]
-        final_result: Optional[BaselineIterationResult] = min(
-                valid_results,
-                key=lambda baseline_result: baseline_result.cost
-        ) if len(valid_results) > 0 else None
+        final_result: Optional[BaselineIterationResult] = self._find_valid_min_cost(iteration_results)
         return BaselineResultSummary(
                 results=iteration_results,
                 final_result_index=iteration_results.index(
@@ -49,4 +42,4 @@ class RandomBaselineStrategy(BaselineStrategy):
         )
         self._graph_candidates.append(graph_of_operations)
 
-        return self._graph_evaluator(graph_of_operations, iteration)
+        return self._evaluate_graph(graph_of_operations, iteration)
