@@ -21,21 +21,28 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
 
     _META_INFO_TEMPERATURE = 'temperature'
     _META_INFO_ENERGY = 'energy'
+    _META_INFO_DELTA_ENERGY = 'delta_energy'
     _META_INFO_PROBABILITY = 'probability'
-    _META_INFO_HAS_HIGHEST_ENERGY = 'has_highest_energy'
     _META_INFO_IS_SELECTED = 'is_selected'
 
     _temperature: float
     _cooling_factor: float
     _best_energy: float
     _all_results: List[BaselineIterationResult]
-    _current_result: Optional[BaselineIterationResult]
+    _selected_result: Optional[BaselineIterationResult]
     _neighbor_regeneration_threshold: int
+    _max_cost: int
 
     @property
     def current_result(self) -> Optional[BaselineIterationResult]:
         """The current result"""
-        return self._current_result
+        return self._selected_result
+
+    @property
+    def _selected_energy(self) -> float:
+        if self._selected_result is None:
+            return 1.0
+        return self._calculate_energy(self._selected_result)
 
     def __init__(self, config: SimulatedAnnealingBaselineConfig) -> None:
         """
@@ -48,8 +55,9 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
         self._cooling_factor = config.cooling_factor
         self._best_energy = 0
         self._all_results = []
-        self._current_result = None
+        self._selected_result = None
         self._neighbor_regeneration_threshold = config.neighbor_regeneration_threshold
+        self._max_cost = config.max_depth * config.max_breadth
 
     def generate(self, max_iterations: int, stop_on_first_valid: bool = False) -> BaselineResultSummary:
         for i in range(1, max_iterations + 1):
@@ -66,8 +74,8 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
         return BaselineResultSummary(
                 results=self._all_results,
                 final_result_index=self._all_results.index(
-                        self._current_result
-                ) if self._current_result is not None else None,
+                        self._selected_result
+                ) if self._selected_result is not None else None,
                 max_iterations=max_iterations
         )
 
@@ -75,29 +83,43 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
         self._temperature *= self._cooling_factor
         neighbor_graph = self._create_neighbor(
                 GraphOfOperations.from_schema(
-                        self._current_result.graph_of_operations,
+                        self._selected_result.graph_of_operations,
                         self._operations
-                ) if self._current_result is not None else None
+                ) if self._selected_result is not None and self._selected_result.is_valid else None
         )
         iteration_result = self._evaluate_graph(neighbor_graph, iteration)
-        energy = float(iteration_result.is_valid) / iteration_result.cost
-        probability: float = exp(-energy / self._temperature)
+        current_energy = self._calculate_energy(iteration_result)
+        selected_energy = self._selected_energy
+        delta_energy = current_energy - selected_energy
+        probability: float = exp(-delta_energy / self._temperature)
 
-        has_highest_energy = energy > self._best_energy
-        is_selected = has_highest_energy or self._random.random() <= probability
+        is_selected = delta_energy < 0 or self._random.random() <= probability
 
         iteration_result = iteration_result.with_meta_info({
-            self._META_INFO_ENERGY: energy,
-            self._META_INFO_HAS_HIGHEST_ENERGY: has_highest_energy,
+            self._META_INFO_ENERGY: current_energy,
+            self._META_INFO_DELTA_ENERGY: delta_energy,
             self._META_INFO_IS_SELECTED: is_selected,
             self._META_INFO_TEMPERATURE: self._temperature,
             self._META_INFO_PROBABILITY: probability
         })
 
         if is_selected:
-            self._current_result = iteration_result
+            self._selected_result = iteration_result
 
         return iteration_result
+
+    def _calculate_energy(self, iteration_result: BaselineIterationResult) -> float:
+        """
+        Calculates the energy of a given iteration result.
+        The energy is 1 if the iteration result is not valid.
+        Otherwise, the energy corresponds to cost / max_cost.
+
+        :param iteration_result: iteration result
+        :return: energy
+        """
+        if not iteration_result.is_valid:
+            return 1.0
+        return iteration_result.cost / self._max_cost
 
     def _create_neighbor(self, graph: Optional[GraphOfOperations] = None) -> GraphOfOperations:
         if graph is None:
@@ -107,7 +129,7 @@ class SimulatedAnnealingBaselineStrategy(BaselineStrategy):
 
         prev_depth = len(operation_array)
 
-        clip_depth = self._random.randint(1, prev_depth)
+        clip_depth = self._random.randint(0, prev_depth)
         clip_layers = operation_array[:clip_depth - 1]
 
         if len(clip_layers) == 0:
