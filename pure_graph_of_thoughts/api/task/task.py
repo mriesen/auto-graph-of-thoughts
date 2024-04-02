@@ -1,19 +1,19 @@
 from dataclasses import dataclass
 from typing import Set, Sequence, Mapping
 
-from .operation_key import OperationKey
 from .evaluator import Evaluator
-from .operation import Operation
-from .operation_type import OperationType
+from .task_exception import TaskException
+from ..operation import OperationKey, Operation, OperationType
 
 InvertedOperationIndex = Mapping[OperationKey, int]
 """Represents a mapping between operations and their indices."""
 
 
 @dataclass(frozen=True)
-class OperationRegistry:
+class Task:
     """
-    Represents the registry for operations of a given problem.
+    Represents a task.
+    A task consists of a list of operations and an evaluator.
     """
 
     operations: Sequence[Operation]
@@ -24,11 +24,11 @@ class OperationRegistry:
 
     def __post_init__(self) -> None:
         if len(set(self.operations)) != len(self.operations):
-            raise OperationRegistryException('All operations must be unique')
+            raise TaskException('All operations must be unique')
 
     @property
     def supported_types(self) -> Set[OperationType]:
-        """Returns all supported types of operations by the registry's instance"""
+        """Returns all supported types of operations of the task"""
         return {operation.type for operation in self.operations}
 
     @property
@@ -40,12 +40,3 @@ class OperationRegistry:
     @property
     def n_operations(self) -> int:
         return len(self.operations)
-
-
-class OperationRegistryException(Exception):
-    """
-    An exception raised when an operation registry cannot be constructed.
-    """
-
-    def __init__(self, message: str) -> None:
-        super().__init__(message)

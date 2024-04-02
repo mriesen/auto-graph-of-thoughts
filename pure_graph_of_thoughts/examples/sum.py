@@ -1,7 +1,7 @@
 from pure_graph_of_thoughts.api.graph.operation import OperationNode, GraphOfOperations
 from pure_graph_of_thoughts.api.language_model import Prompt, Example
-from pure_graph_of_thoughts.api.operation import PromptOperation, OperationType, ScoreExecOperation, OperationRegistry, \
-    Evaluator
+from pure_graph_of_thoughts.api.operation import PromptOperation, OperationType, ScoreExecOperation
+from pure_graph_of_thoughts.api.task import Task, Evaluator
 
 op_split = PromptOperation(
         name='split',
@@ -94,7 +94,7 @@ op_sum = PromptOperation(
                 name='score',
                 type=OperationType.score,
                 score=lambda previous_state, current_state: float(
-                        (
+                        'sum' in current_state and (
                             sum(previous_state['list']) if 'list' in previous_state
                             else sum(
                                     sum(state_list) for state_list in previous_state['lists']
@@ -107,9 +107,9 @@ op_sum = PromptOperation(
         )
 )
 
-sum_list_registry = OperationRegistry(
+sum_list_task = Task(
         operations=[op_sum, op_split, op_merge],
-        evaluator=Evaluator(lambda initial_state, state: sum(initial_state['list']) == state['sum'])
+        evaluator=Evaluator(lambda initial_state, state: 'list' in initial_state and 'sum' in state and sum(initial_state['list']) == state['sum'])
 )
 
 
