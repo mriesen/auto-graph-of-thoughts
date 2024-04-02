@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import Set, Sequence, Mapping
 
 from .evaluator import Evaluator
-from .task_exception import TaskException
 from ..operation import OperationKey, Operation, OperationType
 
 InvertedOperationIndex = Mapping[OperationKey, int]
@@ -40,3 +39,12 @@ class Task:
     @property
     def n_operations(self) -> int:
         return len(self.operations)
+
+
+class TaskException(Exception):
+    """
+    An exception raised when a task instance cannot be constructed.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
