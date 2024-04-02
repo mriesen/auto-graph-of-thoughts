@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Dict, Any, Self
 
 from ..node_schema import NodeSchema
+from ...internal.id import id_from_str
 from ...operation import OperationKey
 
 
@@ -18,6 +19,6 @@ class OperationNodeSchema(NodeSchema):
     def from_dict(cls, data: Dict[str, Any]) -> Self:
         operation_key = data['operation_key']
         return cls(
-                id=data['id'],
+                id=id_from_str(data['id']),
                 operation_key=OperationKey.from_dict(operation_key)
         )

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Sequence, Tuple, TypeVar, Generic, Dict, Any, Self, Type
 
 from .node_schema import NodeSchema
-from ..internal.id import Id
+from ..internal.id import Id, id_from_str
 from ..schema import Schema
 
 N = TypeVar('N', bound=NodeSchema)
@@ -43,7 +43,7 @@ class GraphSchema(Schema, ABC, Generic[N]):
         edges = data['edges']
         return cls(
                 edges=[
-                    (edge[0], edge[1]) for edge in edges
+                    (id_from_str(edge[0]), id_from_str(edge[1])) for edge in edges
                 ],
                 nodes=[
                     node_cls.from_dict(node) for node in data['nodes']

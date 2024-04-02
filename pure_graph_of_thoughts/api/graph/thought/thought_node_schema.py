@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Optional, Dict, Any, Self
 
 from ..node_schema import NodeSchema
-from ...internal.id import Id
+from ...internal.id import Id, id_from_str
 from ...state import State
 
 
@@ -23,4 +23,9 @@ class ThoughtNodeSchema(NodeSchema):
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> Self:
-        return cls(**data)
+        return cls(
+                id=id_from_str(data['id']),
+                origin_id=id_from_str(data['origin_id']) if data['origin_id'] is not None else None,
+                state=data['state'],
+                score=data['score']
+        )
