@@ -12,19 +12,17 @@ dependencies = [
 
 requires-python = ">=3.11"
 authors = [
-    {name = "Manuel Riesen", email = "manuelnoah.riesen@students.bfh.ch"}
+    { name = "Manuel Riesen", email = "manuelnoah.riesen@students.bfh.ch" }
 ]
 maintainers = [
-    {name = "Manuel Riesen", email = "manuelnoah.riesen@students.bfh.ch"}
+    { name = "Manuel Riesen", email = "manuelnoah.riesen@students.bfh.ch" }
 ]
 description = "Automated Graph of Thoughts"
 readme = "README.md"
 license-files = { paths = ["LICENSE"] }
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
-
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
-
     "Programming Language :: Python",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12"
@@ -67,7 +65,7 @@ exclude = [
 [tool.hatch.build.targets.wheel]
 packages = [
     "pure_graph_of_thoughts",
-    "auto-graph-of-thoughts"
+    "auto_graph_of_thoughts"
 ]
 exclude = [
     "pure_graph_of_thoughts/examples/"
