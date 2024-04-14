@@ -64,10 +64,26 @@ class Graph(Sealable, ABC, Generic[N, S]):
         """
         layers: Dict[int, List[N]] = defaultdict(list)
         for node in self.nodes:
-            layers[node.depth].append(node)
+            layers[node.layer_index].append(node)
         return [
             layer for depth, layer in sorted(layers.items())
         ]
+
+    @property
+    def sink_layer(self) -> Sequence[N]:
+        """
+        Returns the sink layer of the graph.
+        :return:
+        """
+        return self.layers[-1]
+
+    @property
+    def sink_layer_index(self) -> int:
+        """
+        Returns the index of the sink layer in the graph.
+        :return: the index of the sink layer
+        """
+        return max([node.layer_index for node in self.nodes], default=0)
 
     @property
     def depth(self) -> int:
@@ -75,7 +91,17 @@ class Graph(Sealable, ABC, Generic[N, S]):
         Returns the depth of the graph.
         :return: the depth of the graph
         """
-        return max([node.depth for node in self.nodes], default=0)
+        return self.sink_layer_index + 1
+
+    @property
+    def breadth(self) -> int:
+        """
+        Returns the breadth of the graph at its widest position.
+        :return: the breadth of the graph
+        """
+        return max([
+            len(layer) for layer in self.layers
+        ])
 
     def seal(self) -> None:
         super().seal()

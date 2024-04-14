@@ -30,14 +30,22 @@ class Node(AutoIdentifiable, Sealable, ABC):
         return self._successors
 
     @property
+    def layer_index(self) -> int:
+        """
+        Returns the layer index of the node.
+        :return: layer
+        """
+        if self.predecessors is None or len(self.predecessors) == 0:
+            return 0
+        return self.predecessors[0].layer_index + 1
+
+    @property
     def depth(self) -> int:
         """
         Returns the depth at which the node is.
         :return: depth
         """
-        if self.predecessors is None or len(self.predecessors) == 0:
-            return 0
-        return self.predecessors[0].depth + 1
+        return self.layer_index + 1
 
     @property
     def is_source(self) -> bool:
