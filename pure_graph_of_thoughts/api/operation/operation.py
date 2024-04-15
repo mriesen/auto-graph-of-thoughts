@@ -2,6 +2,7 @@ from abc import ABC
 from dataclasses import dataclass, field
 from typing import Callable, Optional, Sequence
 
+from .complexity import keep_complexity, Complexity
 from .operation_key import OperationKey
 from ..language_model import Prompt
 from ..state import State
@@ -12,6 +13,9 @@ class Operation(OperationKey, ABC):
     """
     Represents an operation.
     """
+
+    output_complexity: Complexity = field(default=keep_complexity)
+    """The output's complexity"""
 
     @property
     def key(self) -> OperationKey:
@@ -35,7 +39,7 @@ class Operation(OperationKey, ABC):
         return False
 
 
-@dataclass(frozen=True, eq=False, repr=False)
+@dataclass(frozen=True, kw_only=True, eq=False, repr=False)
 class ScoreOperation(Operation):
     """
     Represents a score operation.
@@ -43,7 +47,7 @@ class ScoreOperation(Operation):
     pass
 
 
-@dataclass(frozen=True, eq=False, repr=False)
+@dataclass(frozen=True, kw_only=True, eq=False, repr=False)
 class ScoreExecOperation(ScoreOperation):
     """
     Represents a score execution operation.
@@ -54,7 +58,7 @@ class ScoreExecOperation(ScoreOperation):
     """The score function."""
 
 
-@dataclass(frozen=True, eq=False, repr=False)
+@dataclass(frozen=True, kw_only=True, eq=False, repr=False)
 class ScorePromptOperation(ScoreOperation):
     """
     Represents a score prompt operation.
@@ -71,7 +75,7 @@ class ScorePromptOperation(ScoreOperation):
     """The transformation function applied on the output"""
 
 
-@dataclass(frozen=True, eq=False, repr=False)
+@dataclass(frozen=True, kw_only=True, eq=False, repr=False)
 class PromptOperation(Operation):
     """
     Represents a prompt operation.
@@ -101,7 +105,7 @@ class PromptOperation(Operation):
         return self.score_operation is not None
 
 
-@dataclass(frozen=True, eq=False, repr=False)
+@dataclass(frozen=True, kw_only=True, eq=False, repr=False)
 class ExecOperation(Operation):
     """
     Represents an execution operation.

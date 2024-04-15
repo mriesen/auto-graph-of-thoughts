@@ -1,5 +1,6 @@
 from pure_graph_of_thoughts.api.language_model import Prompt, Example
-from pure_graph_of_thoughts.api.operation import PromptOperation, OperationType, ScoreExecOperation
+from pure_graph_of_thoughts.api.operation import PromptOperation, OperationType, ScoreExecOperation, \
+    relative_complexity, absolute_complexity
 from pure_graph_of_thoughts.api.task import Task, Evaluator
 
 op_split = PromptOperation(
@@ -7,6 +8,7 @@ op_split = PromptOperation(
         n_outputs=2,
         n_inputs=1,
         type=OperationType.generate,
+        output_complexity=relative_complexity(1, 2),
         prompt=Prompt(
                 instruction='Split the given list into two lists of equal size. '
                             'Only output the lists in JSON format as the examples show.',
@@ -37,6 +39,7 @@ op_merge = PromptOperation(
         n_outputs=1,
         n_inputs=2,
         type=OperationType.aggregate,
+        output_complexity=relative_complexity(2),
         prompt=Prompt(
                 instruction='Combine the given lists to a single list nested in another list. '
                             'Only output the list in JSON format as the examples show.',
@@ -70,6 +73,7 @@ op_sum = PromptOperation(
         n_outputs=1,
         n_inputs=1,
         type=OperationType.generate,
+        output_complexity=absolute_complexity(1),
         prompt=Prompt(
                 instruction='Calculate the sum of the provided list and output the sum '
                             'in JSON format like the examples show.',
