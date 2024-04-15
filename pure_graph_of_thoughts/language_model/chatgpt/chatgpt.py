@@ -7,10 +7,12 @@ from openai import OpenAI, RateLimitError
 from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion
 
-from ..api.language_model import LanguageModelException
-from ..api.language_model.language_model import LanguageModel
-from ..api.language_model.prompt import Prompt
-from ..api.state import State
+from .gpt_cost import GPTCost, gpt_costs_by_model
+from .gpt_model import GPTModel, DEFAULT_GPT_MODEL
+from ...api.language_model import LanguageModelException
+from ...api.language_model.language_model import LanguageModel
+from ...api.language_model.prompt import Prompt
+from ...api.state import State
 
 
 class ChatGPT(LanguageModel):
@@ -18,9 +20,8 @@ class ChatGPT(LanguageModel):
     The ChatGPT language model.
     """
 
-    _model_id: str = 'gpt-3.5-turbo-0125'
-    _prompt_token_cost: float = 0.5 / 1_000_000
-    _completion_token_cost: float = 1.5 / 1_000_000
+    _model: GPTModel
+    _cost: GPTCost
     _temperature: float = 1.0
     _max_tokens: int = 1536
     _seed: int = 0
@@ -28,23 +29,26 @@ class ChatGPT(LanguageModel):
     _n_total_completion_tokens: int = 0
     _client: OpenAI
     _total_cost: float = 0
-    _currency: str = '$'
     _logger: logging.Logger
 
     @property
     def total_cost(self) -> float:
+        """The current total cost"""
         return self._total_cost
 
     @property
     def currency(self) -> str:
-        return self._currency
+        """The currency used for the cost"""
+        return self._cost.currency
 
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str, model: GPTModel = DEFAULT_GPT_MODEL) -> None:
         """
         Initializes a new ChatGPT instance.
         :param api_key: OpenAI API key
         """
         self._logger = logging.getLogger(self.__class__.__name__)
+        self._model = model
+        self._cost = gpt_costs_by_model[self._model]
         self._client = OpenAI(
                 api_key=api_key
         )
@@ -61,7 +65,7 @@ class ChatGPT(LanguageModel):
         """
         self._logger.debug('Calling OpenAI API with prompt %s and state %s', prompt, state)
         response: ChatCompletion = self._client.chat.completions.create(
-                model=self._model_id,
+                model=self._model.id,
                 messages=[{'role': 'user', 'content': prompt.for_input(state)}],
                 temperature=self._temperature,
                 max_tokens=self._max_tokens,
@@ -82,8 +86,8 @@ class ChatGPT(LanguageModel):
         self._n_total_prompt_tokens += n_prompt_tokens
         self._n_total_completion_tokens += n_completion_tokens
         delta_cost = (
-                self._prompt_token_cost * n_prompt_tokens
-                + self._completion_token_cost * n_completion_tokens
+                self._cost.prompt_token_cost * n_prompt_tokens
+                + self._cost.completion_token_cost * n_completion_tokens
         )
         self._add_cost(delta_cost)
         self._logger.debug(f'Response ChatGPT: %s', response)
