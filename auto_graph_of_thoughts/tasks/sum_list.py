@@ -11,6 +11,7 @@ op_split = PromptOperation(
         output_complexity=relative_complexity(1, 2),
         prompt=Prompt(
                 instruction='Split the given list into two lists of equal size. '
+                            'Count the number of elements in the list before deciding where to split.'
                             'Only output the lists in JSON format as the examples show.',
                 examples=[
                     Example(
