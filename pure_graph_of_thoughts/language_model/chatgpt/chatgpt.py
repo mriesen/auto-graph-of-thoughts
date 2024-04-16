@@ -9,6 +9,7 @@ from openai.types.chat import ChatCompletion
 
 from .gpt_cost import GPTCost, gpt_costs_by_model
 from .gpt_model import GPTModel, DEFAULT_GPT_MODEL
+from .gpt_usage import GPTUsage
 from ...api.language_model import LanguageModelException
 from ...api.language_model.language_model import LanguageModel
 from ...api.language_model.prompt import Prompt
@@ -32,14 +33,14 @@ class ChatGPT(LanguageModel):
     _logger: logging.Logger
 
     @property
-    def total_cost(self) -> float:
-        """The current total cost"""
-        return self._total_cost
-
-    @property
-    def currency(self) -> str:
-        """The currency used for the cost"""
-        return self._cost.currency
+    def usage(self) -> GPTUsage:
+        return GPTUsage(
+                model=self._model,
+                n_prompt_tokens=self._n_total_prompt_tokens,
+                n_completion_tokens=self._n_total_completion_tokens,
+                total_cost=self._total_cost,
+                currency=self._cost.currency
+        )
 
     def __init__(self, api_key: str, model: GPTModel = DEFAULT_GPT_MODEL) -> None:
         """
@@ -93,8 +94,8 @@ class ChatGPT(LanguageModel):
         self._logger.debug(f'Response ChatGPT: %s', response)
         self._logger.debug(
                 f'Cost delta / total: %s %s / %s %s',
-                delta_cost, self.currency,
-                self.total_cost, self.currency
+                delta_cost, self._cost.currency,
+                self._total_cost, self._cost.currency
         )
         content = response.choices[0].message.content
         if content is not None:
