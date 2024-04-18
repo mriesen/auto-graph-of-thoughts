@@ -24,6 +24,15 @@ pip install auto-graph-of-thoughts[visualization,dot-visualization]
 ```
 Be aware that `dot-visualization` requires the [GraphViz](https://graphviz.org/) library to be installed.
 
+#### Notebooks
+Several notebooks with examples and model training are provided with the source code.
+To run the notebooks, the optional `notebooks` dependencies are required.
+```shell
+pip install auto-graph-of-thoughts[notebooks]
+```
+Be aware that the notebooks are not part of the distributed package on PyPI.
+
+
 ## Pure Graph of Thoughts
 The package `pure_graph_of_thoughts` contains a new implementation of the Graph of Thoughts concepts.
 
