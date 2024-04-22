@@ -35,14 +35,9 @@ _gpt_costs: Sequence[GPTCost] = [
             completion_token_cost=2.0 / 1_000_000
     ),
     GPTCost(
-            model=GPTModel.GPT_35_TURBO_0613,
-            prompt_token_cost=1.50 / 1_000_000,
-            completion_token_cost=2.00 / 1_000_000
-    ),
-    GPTCost(
-            model=GPTModel.GPT_35_TURBO_0301,
-            prompt_token_cost=1.50 / 1_000_000,
-            completion_token_cost=2.00 / 1_000_000
+            model=GPTModel.GPT_4_TURBO_2024_04_09,
+            prompt_token_cost=10.0 / 1_000_000,
+            completion_token_cost=30.00 / 1_000_000
     ),
 ]
 
