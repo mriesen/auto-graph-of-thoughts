@@ -19,7 +19,14 @@ from ..controller import ContinuousGraphController, LayerActionResult
 ObsType = Dict[str, np.int64]
 ActType = np.int64
 
-BOOL_REPRESENTATION: int = 2
+OPTIONAL_BOOL_REPRESENTATION = 3
+ABSENT_BOOL = 2
+
+
+def optional_bool_to_int(value: Optional[bool]) -> int:
+    if value is None:
+        return ABSENT_BOOL
+    return int(value)
 
 
 class GraphOfThoughtsEnv(Env[ObsType, ActType]):
@@ -85,8 +92,10 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         return len([ActionType.Stop, ActionType.Backtrack]) + len(self._task.operations) + 1
 
     @property
-    def _prev_scored(self) -> bool:
-        return self._prev_result.score == 1.0 if self._prev_result is not None and self._prev_result.is_scored else False
+    def _prev_score(self) -> Optional[bool]:
+        return self._prev_result.score == 1.0 if (
+                self._prev_result is not None and self._prev_result.is_scored
+        ) else None
 
     @property
     def _prev_scorable(self) -> bool:
@@ -97,12 +106,11 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         return ObservationComponent.create_dict({
             ObservationComponent.depth: np.int64(self.current_depth),
             ObservationComponent.breadth: np.int64(self.current_breadth),
-            ObservationComponent.divergence: np.int64(int(self._controller.divergence)),
+            ObservationComponent.divergence: np.array([int(self._controller.divergence)], dtype=np.int8),
             ObservationComponent.complexity: np.int64(self._controller.complexity),
             ObservationComponent.local_complexity: np.int64(self._controller.local_complexity),
             ObservationComponent.prev_action: np.int64(self.encode_optional_action(self._prev_action)),
-            ObservationComponent.prev_scored: np.int64(int(self._prev_scored)),
-            ObservationComponent.prev_scorable: np.int64(int(self._prev_scorable)),
+            ObservationComponent.prev_score: np.int64(optional_bool_to_int(self._prev_score))
         })
 
     def __init__(
@@ -141,12 +149,11 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         self.observation_space = spaces.Dict(ObservationComponent.create_dict({
             ObservationComponent.depth: spaces.Discrete(depth_representation, seed=seed),
             ObservationComponent.breadth: spaces.Discrete(breadth_representation, seed=seed),
-            ObservationComponent.divergence: spaces.Discrete(BOOL_REPRESENTATION, seed=seed),
+            ObservationComponent.divergence: spaces.MultiBinary(n=1, seed=seed),
             ObservationComponent.complexity: spaces.Discrete(complexity_representation, seed=seed),
             ObservationComponent.local_complexity: spaces.Discrete(complexity_representation, seed=seed),
             ObservationComponent.prev_action: spaces.Discrete(self._optional_action_representation, seed=seed),
-            ObservationComponent.prev_scored: spaces.Discrete(BOOL_REPRESENTATION, seed=seed),
-            ObservationComponent.prev_scorable: spaces.Discrete(BOOL_REPRESENTATION, seed=seed),
+            ObservationComponent.prev_score: spaces.Discrete(OPTIONAL_BOOL_REPRESENTATION, seed=seed)
         }), seed=seed)
         self.action_space = spaces.Discrete(action_representation, seed=seed)
 

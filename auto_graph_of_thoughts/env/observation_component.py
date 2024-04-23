@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Dict, Any, Self
+from typing import Dict, Any, Self, Set
 
 
 class ObservationComponent(Enum):
@@ -12,8 +12,7 @@ class ObservationComponent(Enum):
     complexity = 'complexity'
     local_complexity = 'local_complexity'
     prev_action = 'prev_action'
-    prev_scored = 'prev_scored'
-    prev_scorable = 'prev_scorable'
+    prev_score = 'prev_score'
     divergence = 'divergence'
 
     @classmethod
@@ -25,4 +24,15 @@ class ObservationComponent(Enum):
         """
         return {
             key.value: value for key, value in observation_dictionary.items()
+        }
+
+    @classmethod
+    def create_set(cls, observation_set: Set[Self]) -> Set[str]:
+        """
+        Creates a proper string set out of an observation component set.
+        :param observation_set: observation set
+        :return: set with strings
+        """
+        return {
+            component.value for component in observation_set
         }
