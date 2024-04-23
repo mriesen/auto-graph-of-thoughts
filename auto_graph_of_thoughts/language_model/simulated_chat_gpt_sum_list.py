@@ -116,7 +116,7 @@ def _split_list(prompt: Prompt, state: State) -> State:
     }
 
 
-def create_simulated_chat_gpt_sum_list(seed: int) -> SimulatedLanguageModel:
+def create_simulated_realistic_chat_gpt_sum_list(seed: int) -> SimulatedLanguageModel:
     """
     Creates a simulated ChatGPT instance for the task sum_list.
     :param seed: seed to use for random number generator
@@ -141,3 +141,32 @@ def create_simulated_chat_gpt_sum_list(seed: int) -> SimulatedLanguageModel:
                 ),
             ])
     return simulated_chat_gpt
+
+
+def create_simulated_clipped_chat_gpt_sum_list(seed: int) -> SimulatedLanguageModel:
+    """
+    Creates a simulated ChatGPT instance for the task sum_list.
+    The probabilities are either 1.0 or 0.0.
+    :param seed: seed to use for random number generator
+    :return: simulated ChatGPT instance for the task sum_list
+    """
+    simulated_chat_gpt = SimulatedLanguageModel(
+            seed=seed,
+            simulated_behaviors=[
+                SimulatedLanguageModelBehavior(
+                        prompt=op_sum.prompt,
+                        mocked_correct_behavior=_sum_list_correctly,
+                        mocked_incorrect_behavior=_sum_list_incorrectly,
+                        probability=lambda p, s: 1.0 if _get_sum_list_probability(p, s) == 1.0 else 0.0
+                ),
+                SimulatedLanguageModelBehavior(
+                        prompt=op_split.prompt,
+                        mocked_correct_behavior=_split_list,
+                ),
+                SimulatedLanguageModelBehavior(
+                        prompt=op_merge.prompt,
+                        mocked_correct_behavior=_merge_lists,
+                ),
+            ])
+    return simulated_chat_gpt
+
