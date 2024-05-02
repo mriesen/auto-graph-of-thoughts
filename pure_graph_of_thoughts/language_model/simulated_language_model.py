@@ -40,20 +40,20 @@ class SimulatedLanguageModel(MockLanguageModel):
 
     def __init__(self, seed: int, simulated_behaviors: Sequence[SimulatedLanguageModelBehavior]):
         self._seed = seed
-        random = Random(self._seed)
+        rnd = Random(self._seed)
         mocked_behaviors = {
-            simulated_behavior.prompt: self._create_mocked_behavior(random, simulated_behavior)
+            simulated_behavior.prompt: self._create_mocked_behavior(rnd, simulated_behavior)
             for simulated_behavior in simulated_behaviors
         }
         super().__init__(mocked_behaviors)
 
     @staticmethod
     def _create_mocked_behavior(
-            random: Random, simulated_behavior: SimulatedLanguageModelBehavior
+            rnd: Random, simulated_behavior: SimulatedLanguageModelBehavior
     ) -> Callable[[Prompt, State], State]:
         def simulate_behavior(prompt: Prompt, state: State) -> State:
             probability = simulated_behavior.probability(prompt, state)
-            if random.random() < probability:
+            if rnd.random() < probability:
                 return simulated_behavior.mocked_correct_behavior(prompt, state)
             return simulated_behavior.mocked_incorrect_behavior(prompt, state)
 
