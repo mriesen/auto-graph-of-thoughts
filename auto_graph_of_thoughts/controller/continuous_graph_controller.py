@@ -34,6 +34,8 @@ class ContinuousGraphController(Controller):
 
     _max_complexity: int
 
+    _max_operations: int
+
     _n_operations: int
 
     @property
@@ -50,6 +52,12 @@ class ContinuousGraphController(Controller):
     def max_complexity(self) -> int:
         """The maximum complexity"""
         return self._max_complexity
+
+    @property
+    def max_operations(self) -> int:
+        """The maximum number of operations"""
+        return self._max_operations
+
 
     @property
     def divergence_cutoff(self) -> int:
@@ -123,7 +131,8 @@ class ContinuousGraphController(Controller):
             max_depth: int,
             max_breadth: int,
             divergence_cutoff_factor: float,
-            max_complexity: int
+            max_complexity: int,
+            max_operations: int
     ) -> None:
         super().__init__(language_model)
         self._generate_init_state = generate_init_state
@@ -131,10 +140,11 @@ class ContinuousGraphController(Controller):
         self._max_breadth = max_breadth
         self._divergence_cutoff_factor = divergence_cutoff_factor
         self._max_complexity = max_complexity
+        self._max_operations = max_operations
 
         self._execution = None
         self._complexity, self._init_state = self._generate_init_state()
-        self._local_complexity = 0
+        self._local_complexity = self._complexity
         self._n_operations = 0
 
     def append_layer(self, operation: Operation) -> LayerActionResult:
@@ -150,15 +160,18 @@ class ContinuousGraphController(Controller):
             if operation.n_inputs != 1:
                 return LayerActionResult.invalid()
 
+            local_complexity = self._calculate_local_complexity(operation.output_complexity)
+            if local_complexity > self._max_complexity:
+                return LayerActionResult.invalid()
+
+            self._local_complexity = local_complexity
+
             # process valid first operation
             self._initialize_controller(operation)
             self._execute_sink_layer()
             return self._create_layer_action_result()
 
-        operation_array = self.graph_of_operations.operation_array
-        predecessor_n_outputs = sum([operation.n_outputs for operation in operation_array[-1]])
-        n_operations: int = predecessor_n_outputs // operation.n_inputs
-
+        predecessor_n_outputs, n_operations = self._prepare_append_operation(operation)
         is_valid = self._validate_append_operation(operation, predecessor_n_outputs, n_operations)
 
         if not is_valid:
@@ -175,13 +188,39 @@ class ContinuousGraphController(Controller):
         self._execute_sink_layer()
         return self._create_layer_action_result()
 
+    def _prepare_append_operation(self, operation: Operation) -> Tuple[int, int]:
+        """
+        Calculates the number of outputs of the predecessors and the number of operations to append.
+        :param operation: operation to append layer of
+        :return: tuple of number of outputs of the predecessors and number of operations to append
+        """
+        operation_array = self.graph_of_operations.operation_array
+        predecessor_n_outputs = sum([operation.n_outputs for operation in operation_array[-1]])
+        n_operations: int = predecessor_n_outputs // operation.n_inputs
+        return predecessor_n_outputs, n_operations
+
     def _calculate_local_complexity(self, output_complexity: Complexity) -> int:
         if isinstance(output_complexity, AbsoluteComplexity):
             return output_complexity
         elif isinstance(output_complexity, RelativeComplexity):
             return max(round(self._local_complexity * output_complexity), 1)
 
+    def validate_append_operation(self, operation: Operation) -> bool:
+        """
+        Validates the appending of an operation.
+        :param operation: operation to append layer of
+        :return: whether the appending of the operation is valid
+        """
+        if not self.is_initialized:
+            return operation.n_inputs == 1
+        predecessor_n_outputs, n_operations = self._prepare_append_operation(operation)
+        return self._validate_append_operation(operation, predecessor_n_outputs, n_operations)
+
     def _validate_append_operation(self, operation: Operation, predecessor_n_outputs: int, n_operations: int) -> bool:
+
+        # honor max operations
+        if self.n_operations >= self.max_operations:
+            return False
 
         # honor max depth
         if self.current_depth > self._max_depth - 1:
@@ -219,12 +258,12 @@ class ContinuousGraphController(Controller):
         sink_thought_layer = self._present_execution.graph_of_thoughts.sink_layer
         sink_thoughts = [thought_node.thought for thought_node in sink_thought_layer]
 
-        scores = [
-            sink_thought.score for sink_thought in sink_thoughts if sink_thought.score is not None
+        cumulative_scores = [
+            sink_thought.cumulative_score for sink_thought in sink_thoughts if sink_thought.cumulative_score is not None
         ]
-        score = min(scores) if len(scores) > 0 else None
+        cumulative_score = sum(cumulative_scores) if len(cumulative_scores) > 0 else None
         return LayerActionResult(
-                score=score
+                cumulative_score=cumulative_score
         )
 
     def _execute_sink_layer(self) -> None:

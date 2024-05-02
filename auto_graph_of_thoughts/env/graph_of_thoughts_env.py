@@ -1,5 +1,5 @@
 import logging
-from typing import Any, SupportsFloat, Sequence, Tuple, Dict, Optional
+from typing import Any, SupportsFloat, Sequence, Tuple, Dict, Optional, Callable, Mapping, List
 
 import numpy as np
 from gymnasium import Env
@@ -11,22 +11,18 @@ from pure_graph_of_thoughts.api.operation import Operation
 from pure_graph_of_thoughts.api.state import State
 from pure_graph_of_thoughts.api.task import Task, InvertedOperationIndex
 from .action_type import ActionType
+from .graph_observation_component import GraphObservationComponent
 from .graph_step_reward import GraphStepReward
 from .layer_action import LayerAction
-from .observation_component import ObservationComponent
 from ..controller import ContinuousGraphController, LayerActionResult
+from ..obs import ObservationComponent
+from ..space import MultiSpace, BoolSpace, OrdinalDiscreteSpace, OptionalBoolSpace, MultiDiscreteSpace
 
-ObsType = Dict[str, np.int64]
+ObsType = Mapping[str, Any]
 ActType = np.int64
 
-OPTIONAL_BOOL_REPRESENTATION = 3
-ABSENT_BOOL = 2
-
-
-def optional_bool_to_int(value: Optional[bool]) -> int:
-    if value is None:
-        return ABSENT_BOOL
-    return int(value)
+DEFAULT_ACTION_LOOKBACK = 4
+DEFAULT_MAX_STEPS = 100
 
 
 class GraphOfThoughtsEnv(Env[ObsType, ActType]):
@@ -37,12 +33,15 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
     _task: Task
     _controller: ContinuousGraphController
     _max_steps: int
+    _transform_observation: Callable[[Mapping[ObservationComponent, Any]], Mapping[str, Any]]
 
     _terminated: bool
     _truncated: bool
     _total_reward: float
     _n_steps: int
-    _prev_action: Optional[LayerAction]
+    _action_lookback: int
+    _prev_actions: List[Optional[LayerAction]]
+    _graph_of_operations_representation: Sequence[Operation]
     _prev_result: Optional[LayerActionResult]
 
     _logger: logging.Logger
@@ -73,6 +72,11 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         return self._controller.max_complexity
 
     @property
+    def max_operations(self) -> int:
+        """The maximum number of operations"""
+        return self._controller.max_operations
+
+    @property
     def n_operations(self) -> int:
         """The number of executed operations"""
         return self._controller.n_operations
@@ -88,12 +92,20 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         return self._controller.graph_of_operations
 
     @property
+    def _operation_representation(self) -> int:
+        return len(self._task.operations)
+
+    @property
+    def _optional_operation_representation(self) -> int:
+        return self._operation_representation + 1
+
+    @property
     def _optional_action_representation(self) -> int:
         return len([ActionType.Stop, ActionType.Backtrack]) + len(self._task.operations) + 1
 
     @property
     def _prev_score(self) -> Optional[bool]:
-        return self._prev_result.score == 1.0 if (
+        return self._prev_result.cumulative_score == 1.0 if (
                 self._prev_result is not None and self._prev_result.is_scored
         ) else None
 
@@ -102,15 +114,40 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         return self._prev_result.is_scored if self._prev_result is not None else False
 
     @property
+    def _all_actions(self) -> Sequence[LayerAction]:
+        return [
+            LayerAction(ActionType.Stop),
+            LayerAction(ActionType.Backtrack),
+        ] + [
+            LayerAction(ActionType.AppendOperation, operation)
+            for operation in self._task.operations
+        ]
+
+    @property
+    def _graph_operations(self) -> Sequence[Optional[Operation]]:
+        operations = [
+            layer[0].operation
+            for layer in self.graph_of_operations.layers
+        ] if self._controller.is_initialized else []
+        empty_layers = self.max_depth - len(operations)
+        return operations + ([None] * empty_layers)
+
+    @property
     def _observation(self) -> ObsType:
-        return ObservationComponent.create_dict({
-            ObservationComponent.depth: np.int64(self.current_depth),
-            ObservationComponent.breadth: np.int64(self.current_breadth),
-            ObservationComponent.divergence: np.array([int(self._controller.divergence)], dtype=np.int8),
-            ObservationComponent.complexity: np.int64(self._controller.complexity),
-            ObservationComponent.local_complexity: np.int64(self._controller.local_complexity),
-            ObservationComponent.prev_action: np.int64(self.encode_optional_action(self._prev_action)),
-            ObservationComponent.prev_score: np.int64(optional_bool_to_int(self._prev_score))
+        return self._transform_observation({
+            GraphObservationComponent.depth: self.current_depth,
+            GraphObservationComponent.breadth: self.current_breadth,
+            GraphObservationComponent.divergence: self._controller.divergence,
+            GraphObservationComponent.complexity: self._controller.complexity,
+            GraphObservationComponent.local_complexity: self._controller.local_complexity,
+            GraphObservationComponent.graph_operations: [
+                self.encode_optional_operation(operation) for operation in self._graph_operations
+            ],
+            GraphObservationComponent.prev_actions: [
+                self.encode_optional_action(prev_action)
+                for prev_action in self._prev_actions[-self._action_lookback:]
+            ],
+            GraphObservationComponent.prev_score: self._prev_score
         })
 
     def __init__(
@@ -118,7 +155,8 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
             task: Task,
             controller: ContinuousGraphController,
             seed: int,
-            max_steps: int
+            action_lookback: int = DEFAULT_ACTION_LOOKBACK,
+            max_steps: int = DEFAULT_MAX_STEPS
     ) -> None:
         """
         Instantiates a new graph of thoughts environment.
@@ -126,38 +164,54 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         :param task: task to solve
         :param controller: underlying controller
         :param seed: seed for the random number generator
+        :param action_lookback: the lookback for actions
         :param max_steps: maximum number of steps per episode
         """
         self._logger = logging.getLogger(self.__class__.__name__)
 
         self._task = task
         self._controller = controller
+        self._action_lookback = action_lookback
         self._max_steps = max_steps
 
         self._terminated = False
         self._truncated = False
         self._total_reward = 0.0
         self._n_steps = 0
-        self._prev_action = None
+        self._prev_actions = [None] * self._action_lookback
         self._prev_result = None
 
         n_operations: int = len(self._task.operations)
         depth_representation: int = self.max_depth + 1
         breadth_representation: int = self.max_breadth + 1
         action_representation: int = len([ActionType.Stop, ActionType.Backtrack]) + n_operations
-        complexity_representation: int = self.max_complexity + 1
-        self.observation_space = spaces.Dict(ObservationComponent.create_dict({
-            ObservationComponent.depth: spaces.Discrete(depth_representation, seed=seed),
-            ObservationComponent.breadth: spaces.Discrete(breadth_representation, seed=seed),
-            ObservationComponent.divergence: spaces.MultiBinary(n=1, seed=seed),
-            ObservationComponent.complexity: spaces.Discrete(complexity_representation, seed=seed),
-            ObservationComponent.local_complexity: spaces.Discrete(complexity_representation, seed=seed),
-            ObservationComponent.prev_action: spaces.Discrete(self._optional_action_representation, seed=seed),
-            ObservationComponent.prev_score: spaces.Discrete(OPTIONAL_BOOL_REPRESENTATION, seed=seed)
-        }), seed=seed)
+        observation_space = MultiSpace.of({
+            GraphObservationComponent.depth: OrdinalDiscreteSpace(depth_representation, seed=seed),
+            GraphObservationComponent.breadth: OrdinalDiscreteSpace(breadth_representation, seed=seed),
+            GraphObservationComponent.divergence: BoolSpace(seed=seed),
+            GraphObservationComponent.complexity: OrdinalDiscreteSpace(self.max_complexity, start=1, seed=seed),
+            GraphObservationComponent.local_complexity: OrdinalDiscreteSpace(self.max_complexity+1, start=0, seed=seed),
+            GraphObservationComponent.graph_operations: MultiDiscreteSpace(
+                    [
+                        self._optional_operation_representation
+                        for _ in range(self.max_depth)
+                    ],
+                    seed=seed
+            ),
+            GraphObservationComponent.prev_actions: MultiDiscreteSpace(
+                    [
+                        self._optional_action_representation
+                        for _ in range(self._action_lookback)
+                    ],
+                    seed=seed
+            ),
+            GraphObservationComponent.prev_score: OptionalBoolSpace(seed=seed)
+        }, seed=seed)
+        self.observation_space = observation_space
+        self._transform_observation = observation_space.transform
         self.action_space = spaces.Discrete(action_representation, seed=seed)
 
-    def step(self, encoded_action: ActType) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
+    def step(self, encoded_action: ActType) -> Tuple[ObsType, SupportsFloat, bool, bool, Dict[str, Any]]:
 
         if self._terminated or self._truncated:
             self._logger.warning('Episode is terminated or truncated, reset environment')
@@ -181,20 +235,25 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         self._truncated = False
         self._total_reward = 0.0
         self._n_steps = 0
-        self._prev_action = None
+        self._prev_actions = [None] * self._action_lookback
         self._prev_result = None
         self._controller.reset()
 
         if self._observation not in self.observation_space:
-            print(self._observation)
+            raise GraphOfThoughtsEnvException(f'Observation is not in observation space: {self._observation}')
 
         return self._observation, {}
 
     def _process_step(self, action: LayerAction) -> Tuple[ObsType, SupportsFloat, bool, bool, Dict[str, Any]]:
         info: Dict[str, Any] = {}
-        reward = GraphStepReward(action=action, max_depth=self.max_depth, max_ops=self.max_depth * self.max_breadth)
+        reward = GraphStepReward(
+                action=action,
+                max_depth=self.max_depth,
+                max_operations=self.max_operations,
+                prev_scored=self._prev_score
+        )
 
-        self._prev_action = action
+        self._prev_actions.append(action)
 
         if action.type == ActionType.Stop:
             self._terminated = True
@@ -221,10 +280,10 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         if not result.is_valid:
             reward = reward.invalid()
         elif result.is_scored:
-            reward = reward.scored(result.score == 1.0)
+            reward = reward.scored(result.cumulative_score >= 1.0)
 
         if self._observation not in self.observation_space:
-            print(self._observation)
+            raise GraphOfThoughtsEnvException(f'Observation is not in observation space: {self._observation}')
         return self._observation, reward, self._terminated, self._truncated, info
 
     def _calculate_final_reward(self, reward: GraphStepReward) -> GraphStepReward:
@@ -245,26 +304,81 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         else:
             return reward.scored(False)
 
-    def decode_action(self, encoded_action: np.int64) -> LayerAction:
+    def encode_operation(self, operation: Operation) -> int:
+        """
+        Encodes a given operation
+        :param operation: operation to encode
+        :return: encoded operation
+        """
+        inverted_operation_index: InvertedOperationIndex = self._task.inverted_operation_index
+        return inverted_operation_index[operation.key]
+
+    def decode_operation(self, encoded_operation: int) -> Operation:
+        """
+        Decodes an encoded operation.
+        :param encoded_operation: encoded operation
+        :return: decoded operation
+        """
         operations: Sequence[Operation] = self._task.operations
+        return operations[encoded_operation]
+
+    def decode_action(self, encoded_action: np.int64) -> LayerAction:
+        """
+        Decodes an encoded action
+        :param encoded_action: action to decode
+        :return: decoded action
+        """
         scalar = encoded_action.item()
         if scalar <= 1:
             return LayerAction(ActionType(scalar))
         operation_index = scalar - ActionType.AppendOperation.value
-        return LayerAction(type=ActionType.AppendOperation, operation=operations[operation_index])
+        return LayerAction(type=ActionType.AppendOperation, operation=self.decode_operation(operation_index))
 
-    def encode_action(self, action: LayerAction) -> np.int64:
-        inverted_operation_index: InvertedOperationIndex = self._task.inverted_operation_index
+    def encode_action(self, action: LayerAction) -> int:
+        """
+        Encodes a given action.
+        :param action: action to encode
+        :return: encoded action
+        """
         if action.type != ActionType.AppendOperation:
-            return np.int64(action.type.value)
+            return int(action.type.value)
         if action.operation is None:
             raise GraphOfThoughtsEnvException('Operation is None')
-        return np.int64(ActionType.AppendOperation.value + inverted_operation_index[action.operation.key])
+        return ActionType.AppendOperation.value + self.encode_operation(action.operation)
 
-    def encode_optional_action(self, action: Optional[LayerAction]) -> np.int64:
+    def encode_optional_action(self, action: Optional[LayerAction]) -> int:
+        """
+        Encodes an optional action.
+        :param action: optional action to encode
+        :return: encoded optional action
+        """
         if action is None:
-            return np.int64(self._optional_action_representation - 1)
+            return self._optional_action_representation - 1
         return self.encode_action(action)
+
+    def encode_optional_operation(self, operation: Optional[Operation]) -> int:
+        """
+        Encodes an optional operation
+        :param operation: optional operation to encode
+        :return: encoded optional operation
+        """
+        if operation is None:
+            return self._optional_operation_representation - 1
+        return self.encode_operation(operation)
+
+    def validate_action(self, action: LayerAction) -> bool:
+        """
+        Validates a given action.
+        :param action: action to validate
+        :return: whether the action is valid
+        """
+        if action.type == ActionType.Stop:
+            return True
+        if action.type == ActionType.Backtrack:
+            return self._controller.is_initialized
+        if action.type == ActionType.AppendOperation and action.operation is not None:
+            return self._controller.validate_append_operation(action.operation)
+        return False
 
 
 class GraphOfThoughtsEnvException(Exception):
