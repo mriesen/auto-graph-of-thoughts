@@ -1,7 +1,6 @@
 import numpy as np
 import numpy.typing as npt
 from gymnasium import Env
-from gymnasium.utils import seeding
 from gymnasium.vector.utils import spaces
 
 
@@ -46,7 +45,8 @@ class QLearning:
         :param seed: seed
         """
         self._env = env
-        self._np_random, self._seed = seeding.np_random(seed)
+        self._seed = seed
+        self._np_random = np.random.default_rng(seed=seed)
         self._alpha = alpha
         self._gamma = gamma
         self._epsilon = epsilon
@@ -56,6 +56,7 @@ class QLearning:
             raise QLearningException('Action space must be discrete')
         observation_space: spaces.Discrete = self._env.observation_space
         action_space: spaces.Discrete = self._env.action_space
+        action_space.seed(self._seed)
         self._Q = np.zeros((observation_space.n, action_space.n), dtype=np.float32)
 
     def learn(self, total_episodes: int, verbose: bool = False) -> None:
@@ -69,7 +70,7 @@ class QLearning:
             terminated = False
             truncated = False
             total_rewards = 0.0
-            state, _ = self._env.reset()
+            state, _ = self._env.reset(seed=self._seed)
 
             while not terminated and not truncated:
                 if self._np_random.uniform(0, 1) < self._epsilon:
@@ -78,7 +79,6 @@ class QLearning:
                 else:
                     # exploitation
                     action = np.argmax(self._Q[state])
-
                 # act
                 new_state, reward, terminated, truncated, info = self._env.step(action)
                 reward = float(reward)
