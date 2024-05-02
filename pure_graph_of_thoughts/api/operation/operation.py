@@ -54,7 +54,7 @@ class ScoreExecOperation(ScoreOperation):
     The score is calculated by executing a defined score function.
     """
 
-    score: Callable[[State, State], float]
+    score: Callable[[float, State, State], float]
     """The score function."""
 
 

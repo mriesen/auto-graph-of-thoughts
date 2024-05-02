@@ -1,6 +1,6 @@
 import logging
 from abc import ABC
-from typing import Sequence
+from typing import Sequence, Optional
 
 from ..graph.operation import OperationNode
 from ..graph.thought import ThoughtNode
@@ -42,24 +42,31 @@ class Controller(ABC):
         input_thoughts = [
             thought_node.thought for thought_node in input_thought_nodes
         ]
-        input_states = [
-            thought.state for thought in input_thoughts
-        ]
 
-        output_thoughts = self._process_operation(operation_node, input_states)
+        output_thoughts = self._process_operation(operation_node, input_thoughts)
         return [
             ThoughtNode.of(thought=thought) for thought in output_thoughts
         ]
 
     def _process_operation(
-            self, operation_node: OperationNode, input_states: Sequence[State]
+            self, operation_node: OperationNode, input_thoughts: Sequence[Thought]
     ) -> Sequence[Thought]:
         """
         Processes an operation of a given operation node with the given input states.
         :param operation_node: operation node
-        :param input_states: input states
+        :param input_thoughts: input thoughts
         :return: generated thoughts
         """
+
+        input_states = [
+            thought.state for thought in input_thoughts
+        ]
+
+        cumulative_score = sum([
+            input_thought.cumulative_score for input_thought in input_thoughts
+            if input_thought.cumulative_score is not None
+        ])
+
         operation = operation_node.operation
         self._logger.info('Processing operation %s', operation)
 
@@ -69,11 +76,13 @@ class Controller(ABC):
             output_states = operation.transform_after(output_state)
             if operation.is_scorable and operation.score_operation is not None:
                 return [
-                    self._process_score_operation(operation.score_operation, operation_node, input_state, output_state)
+                    self._process_score_operation(
+                            operation.score_operation, operation_node, cumulative_score, input_state, output_state
+                    )
                     for output_state in output_states
                 ]
             return [
-                Thought(state=output_state, origin_id=operation_node.id) for output_state in output_states
+                Thought(state=output_state, origin_id=operation_node.id, cumulative_score=cumulative_score) for output_state in output_states
             ]
         elif isinstance(operation, ExecOperation):
             output_states = operation.execute(input_states)
@@ -86,6 +95,7 @@ class Controller(ABC):
             self,
             score_operation: ScoreOperation,
             operation_node: OperationNode,
+            previous_cumulative_score: float,
             previous_state: State,
             current_state: State
     ) -> Thought:
@@ -93,6 +103,7 @@ class Controller(ABC):
         Processes a score operation for a given operation node with the previous and current state as input.
         :param score_operation: score operation to process
         :param operation_node: operation node
+        :param previous_cumulative_score: cumulative score from previous thoughts
         :param previous_state: state of previous thought
         :param current_state: state of current thought
         :return: scored thought
@@ -102,10 +113,22 @@ class Controller(ABC):
             input_state = score_operation.transform_before(current_state)
             output_state = self._language_model.prompt(score_operation.prompt, input_state)
             score = score_operation.transform_after(output_state)
-            return Thought(state=current_state, score=score, origin_id=operation_node.id)
+            cumulative_score = previous_cumulative_score + score
+            return Thought(
+                    state=current_state,
+                    score=score,
+                    cumulative_score=cumulative_score,
+                    origin_id=operation_node.id
+            )
         elif isinstance(score_operation, ScoreExecOperation):
-            score = score_operation.score(previous_state, current_state)
-            return Thought(state=current_state, score=score, origin_id=operation_node.id)
+            score = score_operation.score(previous_cumulative_score, previous_state, current_state)
+            cumulative_score = previous_cumulative_score + score
+            return Thought(
+                    state=current_state,
+                    score=score,
+                    cumulative_score=cumulative_score,
+                    origin_id=operation_node.id
+            )
         raise ControllerException(f'Score operation is not supported: {type(score_operation)}')
 
 
