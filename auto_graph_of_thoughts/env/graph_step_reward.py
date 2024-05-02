@@ -12,8 +12,16 @@ class GraphStepReward:
     """
 
     _is_invalid: bool = field(default=False)
+    """Whether the action is invalid"""
+
     _is_final: bool = field(default=False)
-    _scored: Optional[bool] = field(default=None)
+    """Whether the action is final"""
+
+    _score: Optional[bool] = field(default=None)
+    """The score of the action if applicable"""
+
+    prev_scored: Optional[bool] = field(default=None)
+    """The score of the previous action if applicable"""
 
     depth: int = field(default=0)
     """The graph's depth"""
@@ -21,7 +29,7 @@ class GraphStepReward:
     n_operations: int = field(default=0)
     """The number of executed operations"""
 
-    max_ops: int
+    max_operations: int
     """The maximum number of operations"""
 
     max_depth: int
@@ -33,7 +41,7 @@ class GraphStepReward:
     @property
     def is_solved(self) -> bool:
         """Whether the problem is solved"""
-        return self._is_final and self._scored is not None and self._scored
+        return self._is_final and self._score is not None and self._score
 
     def invalid(self) -> Self:
         """Marks the action taken as invalid"""
@@ -51,26 +59,30 @@ class GraphStepReward:
         :param scored: the achieved score
         :return: reward
         """
-        self._scored = scored
+        self._score = scored
         return self
 
     def __float__(self) -> float:
         return self._calculate_reward() / 100.0
 
     def _calculate_reward(self) -> float:
-        depth_penalty = -(10 / self.max_depth) * self.depth
+        n_ops_penalty = -(10 / self.max_operations) * self.n_operations
+        n_depth_penalty = -(10 / self.max_depth) * self.depth
         if self.action.type == ActionType.Backtrack:
+            if self.prev_scored is not None and not self.prev_scored:
+                return -5
             return -20
         if self._is_invalid:
-            if self._is_final:
-                return -100
             return -10
-        if self._scored is None:
-            return 10 + depth_penalty
-        if self._scored:
+        if self._score is None:
+            return 5 + n_depth_penalty
+        if self._score:
             if self._is_final:
                 return 100
-            return 10 + depth_penalty
+            return 10 + n_depth_penalty
         if self._is_final:
-            return -20 + depth_penalty
-        return -10 + depth_penalty
+            return -20 + n_depth_penalty
+        return -10 + n_depth_penalty
+
+
+
