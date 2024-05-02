@@ -8,8 +8,8 @@ class LayerActionResult:
     Represents the result of a layer action.
     """
 
-    cumulative_score: Optional[float] = field(default=None)
-    """The cumulative score of the action if present"""
+    cumulative_score: float = field(default=0.0)
+    """The cumulative score of the action"""
 
     is_valid: bool = field(default=True)
     """Whether the action taken is valid"""

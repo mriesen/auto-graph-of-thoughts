@@ -20,5 +20,5 @@ class Thought:
     score: Optional[float] = field(default=None)
     """The score of the thought if applicable"""
 
-    cumulative_score: Optional[float] = field(default=None)
-    """The cumulative score of the thought if applicable"""
+    cumulative_score: float = field(default=0.0)
+    """The cumulative score of the thought"""

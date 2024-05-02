@@ -259,9 +259,9 @@ class ContinuousGraphController(Controller):
         sink_thoughts = [thought_node.thought for thought_node in sink_thought_layer]
 
         cumulative_scores = [
-            sink_thought.cumulative_score for sink_thought in sink_thoughts if sink_thought.cumulative_score is not None
+            sink_thought.cumulative_score for sink_thought in sink_thoughts
         ]
-        cumulative_score = sum(cumulative_scores) if len(cumulative_scores) > 0 else None
+        cumulative_score = sum(cumulative_scores) if len(cumulative_scores) > 0 else 0.0
         return LayerActionResult(
                 cumulative_score=cumulative_score
         )
