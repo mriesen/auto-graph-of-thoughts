@@ -1,6 +1,7 @@
 from pure_graph_of_thoughts.api.language_model import Prompt, Example
 from pure_graph_of_thoughts.api.operation import PromptOperation, OperationType, ScoreExecOperation, \
     relative_complexity, absolute_complexity
+from pure_graph_of_thoughts.api.state import State
 from pure_graph_of_thoughts.api.task import Task, Evaluator
 
 op_split = PromptOperation(
@@ -69,8 +70,32 @@ op_merge = PromptOperation(
         }
 )
 
+
+def score_op_sum(cumulative_score: float, previous_state: State, current_state: State) -> float:
+    """
+    Determines the score of the sum operation.
+    :param cumulative_score: cumulative score
+    :param previous_state: previous state
+    :param current_state: current state
+    :return: score
+    """
+    if cumulative_score < 0.0:
+        return -1.0
+    current_sum = current_state['sum'] if 'sum' in current_state else None
+    previous_sum = (
+        sum(previous_state['list']) if 'list' in previous_state
+        else sum(
+                sum(state_list) for state_list in previous_state['lists']
+        ) if 'lists' in previous_state
+        else None
+    )
+    if current_sum is not None and previous_sum is not None and current_sum == previous_sum:
+        return 1.0
+    return -1.0
+
+
 op_sum = PromptOperation(
-        name='generate_single',
+        name='sum',
         n_outputs=1,
         n_inputs=1,
         type=OperationType.generate,
@@ -97,15 +122,7 @@ op_sum = PromptOperation(
         score_operation=ScoreExecOperation(
                 name='score',
                 type=OperationType.score,
-                score=lambda previous_state, current_state: float(
-                        'sum' in current_state and (
-                            sum(previous_state['list']) if 'list' in previous_state
-                            else sum(
-                                    sum(state_list) for state_list in previous_state['lists']
-                            ) if 'lists' in previous_state
-                            else 0
-                        ) == current_state['sum']
-                ),
+                score=score_op_sum,
                 n_inputs=1,
                 n_outputs=1
         )
