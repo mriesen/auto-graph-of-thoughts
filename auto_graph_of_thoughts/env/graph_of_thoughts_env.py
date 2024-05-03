@@ -82,6 +82,11 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         return self._controller.n_operations
 
     @property
+    def local_complexity(self) -> int:
+        """The local complexity"""
+        return self._controller.local_complexity
+
+    @property
     def graph_of_thoughts(self) -> Optional[GraphOfThoughts]:
         """The graph of thoughts"""
         return self._controller.graph_of_thoughts

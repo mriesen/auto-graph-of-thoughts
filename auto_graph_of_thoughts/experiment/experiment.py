@@ -1,0 +1,69 @@
+from random import Random
+from typing import Sequence, Tuple
+
+from .experiment_configuration import ExperimentConfiguration
+from .generate_init_state import generate_init_state
+from ..controller import ContinuousGraphController
+from ..env import GraphOfThoughtsEnv
+from ..env.wrapper import DictObsFilterWrapper
+
+
+class Experiment:
+    """
+    Represents an experiment.
+    """
+
+    _config: ExperimentConfiguration
+
+    def __init__(self, config: ExperimentConfiguration) -> None:
+        self._config = config
+
+    def create_filtered_train_env(self) -> DictObsFilterWrapper:
+        """
+        Creates a filtered train environment.
+        :return: filtered train environment
+        """
+        controller = self._create_controller(self._config, self._config.train_complexities)
+        env = self._create_env(self._config, controller)
+        return self._create_filtered_env(self._config, env)
+
+    def created_eval_env_tuple(self) -> Tuple[GraphOfThoughtsEnv, DictObsFilterWrapper]:
+        """
+        Creates a filtered evaluation environment.
+        :return: tuple of unwrapped environment and filtered environment
+        """
+        controller = self._create_controller(self._config, self._config.eval_complexities)
+        env = self._create_env(self._config, controller)
+        return env, self._create_filtered_env(self._config, env)
+
+    @staticmethod
+    def _create_controller(config: ExperimentConfiguration, complexities: Sequence[int]) -> ContinuousGraphController:
+        language_model = config.lm_simulation_type.factory_function(config.seed)
+        rnd = Random(config.seed)
+        return ContinuousGraphController(
+                language_model=language_model,
+                generate_init_state=lambda: generate_init_state(rnd, complexities),
+                max_depth=config.max_depth,
+                max_breadth=config.max_breadth,
+                divergence_cutoff_factor=config.divergence_cutoff_factor,
+                max_complexity=config.max_complexity,
+                max_operations=config.max_operations
+        )
+
+    @staticmethod
+    def _create_env(config: ExperimentConfiguration, controller: ContinuousGraphController) -> GraphOfThoughtsEnv:
+        return GraphOfThoughtsEnv(
+                config.task,
+                controller,
+                seed=config.seed,
+                max_steps=config.max_steps
+        )
+
+    @staticmethod
+    def _create_filtered_env(
+            config: ExperimentConfiguration, graph_of_thoughts_env: GraphOfThoughtsEnv
+    ) -> DictObsFilterWrapper:
+        return DictObsFilterWrapper(
+                graph_of_thoughts_env,
+                observation_filter=config.observation_filter
+        )
