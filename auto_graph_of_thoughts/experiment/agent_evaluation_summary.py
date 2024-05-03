@@ -15,8 +15,11 @@ class AgentEvaluationSummary(Schema):
     n_episodes_per_complexity: int
     """The number of episodes per complexity"""
 
-    solved_rate_by_complexity: Mapping[int, float]
+    solved_rate_per_complexity: Mapping[int, float]
     """The rate of solved tasks by complexity"""
+
+    avg_n_operations_per_complexity: Mapping[int, float]
+    """The average number of operations per complexity"""
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> Self:

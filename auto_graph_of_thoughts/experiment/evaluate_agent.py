@@ -46,4 +46,10 @@ def evaluate_agent(
                     n_operations=env.n_operations
             )
             episodes.append(episode)
-    return AgentEvaluation(name, n_episodes_per_complexity, episodes)
+    return AgentEvaluation(
+            name=name,
+            n_episodes_per_complexity=n_episodes_per_complexity,
+            episodes=episodes,
+            train_complexities=set(experiment.config.train_complexities),
+            eval_complexities=set(experiment.config.eval_complexities)
+    )

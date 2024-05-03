@@ -1,6 +1,7 @@
 import itertools
 from dataclasses import dataclass
-from typing import Sequence
+from typing import Sequence, Set
+from statistics import mean
 
 from .agent_evaluation_summary import AgentEvaluationSummary
 from .episode import Episode
@@ -20,10 +21,23 @@ class AgentEvaluation:
     episodes: Sequence[Episode]
     """The episodes of the evaluation"""
 
+    train_complexities: Set[int]
+    """The training complexities"""
+
+    eval_complexities: Set[int]
+    """The evaluation complexities"""
+
     @property
-    def solved_rate(self) -> float:
-        """The rate of solved tasks"""
-        return len([episode for episode in self.episodes if episode.is_solved]) / len(self.episodes)
+    def solved_rate_train_complexities(self) -> float:
+        """The rate of solved tasks for train complexities"""
+        episodes = [episode for episode in self.episodes if episode.complexity in self.train_complexities]
+        return len([episode for episode in episodes if episode.is_solved]) / len(episodes)
+
+    @property
+    def solved_rate_eval_complexities(self) -> float:
+        """The rate of solved tasks for evaluation complexities"""
+        episodes = [episode for episode in self.episodes if episode.complexity in self.eval_complexities]
+        return len([episode for episode in episodes if episode.is_solved]) / len(episodes)
 
     @property
     def summary(self) -> AgentEvaluationSummary:
@@ -36,8 +50,13 @@ class AgentEvaluation:
             complexity: len([episode for episode in episodes if episode.is_solved]) / len(episodes) if len(episodes) > 0 else 0
             for complexity, episodes in groups.items()
         }
+        avg_n_operations_by_complexity = {
+            complexity: mean(episode.n_operations for episode in episodes)
+            for complexity, episodes in groups.items()
+        }
         return AgentEvaluationSummary(
                 name=self.name,
                 n_episodes_per_complexity=self.n_episodes_per_complexity,
-                solved_rate_by_complexity=solved_rate_by_complexity
+                solved_rate_per_complexity=solved_rate_by_complexity,
+                avg_n_operations_per_complexity=avg_n_operations_by_complexity
         )
