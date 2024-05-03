@@ -258,13 +258,12 @@ class ContinuousGraphController(Controller):
         sink_thought_layer = self._present_execution.graph_of_thoughts.sink_layer
         sink_thoughts = [thought_node.thought for thought_node in sink_thought_layer]
 
-        cumulative_scores = [
-            sink_thought.cumulative_score for sink_thought in sink_thoughts
+        scores = [
+            sink_thought.score for sink_thought in sink_thoughts if sink_thought.score is not None
         ]
-        cumulative_score = sum(cumulative_scores) if len(cumulative_scores) > 0 else 0.0
-        return LayerActionResult(
-                cumulative_score=cumulative_score
-        )
+        score = min(scores) if len(scores) > 0 else None
+
+        return LayerActionResult(score=score)
 
     def _execute_sink_layer(self) -> None:
         sink_operation_layer: Sequence[OperationNode] = self.graph_of_operations.sink_layer
@@ -275,7 +274,6 @@ class ContinuousGraphController(Controller):
     def _initialize_controller(self, operation: Operation) -> None:
         source_operation_node = OperationNode.of(operation)
         graph_of_operations = GraphOfOperations.from_source(source_operation_node)
-        self._complexity, self._init_state = self._generate_init_state()
         graph_of_thoughts = GraphOfThoughts.from_init_state(self._init_state)
         self._execution = GraphOfOperationsExecution(
                 graph_of_operations=graph_of_operations,

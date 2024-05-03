@@ -105,7 +105,7 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
 
     @property
     def _prev_score(self) -> Optional[bool]:
-        return self._prev_result.cumulative_score == 1.0 if (
+        return self._prev_result.score == 1.0 if (
                 self._prev_result is not None and self._prev_result.is_scored
         ) else None
 
@@ -280,7 +280,7 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         if not result.is_valid:
             reward = reward.invalid()
         elif result.is_scored:
-            reward = reward.scored(result.cumulative_score >= 1.0)
+            reward = reward.scored(result.score == 1.0)
 
         if self._observation not in self.observation_space:
             raise GraphOfThoughtsEnvException(f'Observation is not in observation space: {self._observation}')
