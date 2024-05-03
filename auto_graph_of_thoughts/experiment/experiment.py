@@ -1,5 +1,5 @@
 from random import Random
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Optional
 
 from .experiment_configuration import ExperimentConfiguration
 from .generate_init_state import generate_init_state
@@ -15,6 +15,11 @@ class Experiment:
 
     _config: ExperimentConfiguration
 
+    @property
+    def config(self) -> ExperimentConfiguration:
+        """The experiment configuration"""
+        return self._config
+
     def __init__(self, config: ExperimentConfiguration) -> None:
         self._config = config
 
@@ -27,12 +32,17 @@ class Experiment:
         env = self._create_env(self._config, controller)
         return self._create_filtered_env(self._config, env)
 
-    def created_eval_env_tuple(self) -> Tuple[GraphOfThoughtsEnv, DictObsFilterWrapper]:
+    def created_eval_env_tuple(
+            self, eval_complexities: Optional[Sequence[int]] = None
+    ) -> Tuple[GraphOfThoughtsEnv, DictObsFilterWrapper]:
         """
         Creates a filtered evaluation environment.
+        :param eval_complexities: complexities to evaluate
         :return: tuple of unwrapped environment and filtered environment
         """
-        controller = self._create_controller(self._config, self._config.eval_complexities)
+        if eval_complexities is None:
+            eval_complexities = self._config.eval_complexities
+        controller = self._create_controller(self._config, eval_complexities)
         env = self._create_env(self._config, controller)
         return env, self._create_filtered_env(self._config, env)
 

@@ -43,6 +43,7 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
     _prev_actions: List[Optional[LayerAction]]
     _graph_of_operations_representation: Sequence[Operation]
     _prev_result: Optional[LayerActionResult]
+    _is_solved: bool
 
     _logger: logging.Logger
 
@@ -82,9 +83,18 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         return self._controller.n_operations
 
     @property
+    def complexity(self) -> int:
+        """The complexity of the current task"""
+        return self._controller.complexity
+
+    @property
     def local_complexity(self) -> int:
         """The local complexity"""
         return self._controller.local_complexity
+
+    @property
+    def is_solved(self) -> bool:
+        return self._is_solved
 
     @property
     def graph_of_thoughts(self) -> Optional[GraphOfThoughts]:
@@ -185,6 +195,7 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         self._n_steps = 0
         self._prev_actions = [None] * self._action_lookback
         self._prev_result = None
+        self._is_solved = False
 
         n_operations: int = len(self._task.operations)
         depth_representation: int = self.max_depth + 1
@@ -242,6 +253,7 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         self._n_steps = 0
         self._prev_actions = [None] * self._action_lookback
         self._prev_result = None
+        self._is_solved = False
         self._controller.reset()
 
         if self._observation not in self.observation_space:
@@ -264,6 +276,7 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
             self._terminated = True
             reward = self._calculate_final_reward(reward)
             info['solved'] = reward.is_solved
+            self._is_solved = reward.is_solved
             return self._observation, reward, self._terminated, self._truncated, info
 
         result: Optional[LayerActionResult] = None

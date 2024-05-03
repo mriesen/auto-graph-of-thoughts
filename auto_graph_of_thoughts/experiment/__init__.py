@@ -1,3 +1,7 @@
+from .agent_evaluation import AgentEvaluation
+from .agent_evaluation_summary import AgentEvaluationSummary
+from .episode import Episode
+from .evaluate_agent import evaluate_agent
 from .experiment import Experiment
 from .experiment_configuration import ExperimentConfiguration
 from .generate_init_state import generate_init_state
