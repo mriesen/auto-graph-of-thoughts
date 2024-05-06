@@ -10,6 +10,7 @@ from pure_graph_of_thoughts.api.graph.thought import GraphOfThoughts
 from pure_graph_of_thoughts.api.operation import Operation
 from pure_graph_of_thoughts.api.state import State
 from pure_graph_of_thoughts.api.task import Task, InvertedOperationIndex
+from .graph_step_reward_version import GraphStepRewardVersion
 from .action_type import ActionType
 from .graph_observation_component import GraphObservationComponent
 from .graph_step_reward import GraphStepReward
@@ -33,6 +34,7 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
     _task: Task
     _controller: ContinuousGraphController
     _max_steps: int
+    _reward_version: GraphStepRewardVersion
     _transform_observation: Callable[[Mapping[ObservationComponent, Any]], Mapping[str, Any]]
 
     _terminated: bool
@@ -170,8 +172,9 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
             task: Task,
             controller: ContinuousGraphController,
             seed: int,
+            reward_version: GraphStepRewardVersion,
             action_lookback: int = DEFAULT_ACTION_LOOKBACK,
-            max_steps: int = DEFAULT_MAX_STEPS
+            max_steps: int = DEFAULT_MAX_STEPS,
     ) -> None:
         """
         Instantiates a new graph of thoughts environment.
@@ -179,6 +182,7 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         :param task: task to solve
         :param controller: underlying controller
         :param seed: seed for the random number generator
+        :param reward_version: reward version
         :param action_lookback: the lookback for actions
         :param max_steps: maximum number of steps per episode
         """
@@ -188,6 +192,7 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         self._controller = controller
         self._action_lookback = action_lookback
         self._max_steps = max_steps
+        self._reward_version = reward_version
 
         self._terminated = False
         self._truncated = False
@@ -206,7 +211,8 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
             GraphObservationComponent.breadth: OrdinalDiscreteSpace(breadth_representation, seed=seed),
             GraphObservationComponent.divergence: BoolSpace(seed=seed),
             GraphObservationComponent.complexity: OrdinalDiscreteSpace(self.max_complexity, start=1, seed=seed),
-            GraphObservationComponent.local_complexity: OrdinalDiscreteSpace(self.max_complexity+1, start=0, seed=seed),
+            GraphObservationComponent.local_complexity: OrdinalDiscreteSpace(self.max_complexity + 1, start=0,
+                                                                             seed=seed),
             GraphObservationComponent.graph_operations: MultiDiscreteSpace(
                     [
                         self._optional_operation_representation
@@ -264,6 +270,7 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
     def _process_step(self, action: LayerAction) -> Tuple[ObsType, SupportsFloat, bool, bool, Dict[str, Any]]:
         info: Dict[str, Any] = {}
         reward = GraphStepReward(
+                version=self._reward_version,
                 action=action,
                 max_depth=self.max_depth,
                 max_operations=self.max_operations,

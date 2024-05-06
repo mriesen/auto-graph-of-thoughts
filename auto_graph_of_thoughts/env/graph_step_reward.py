@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional, Self
 
+from .graph_step_reward_version import GraphStepRewardVersion
 from .action_type import ActionType
 from .layer_action import LayerAction
 
@@ -28,6 +29,9 @@ class GraphStepReward:
 
     n_operations: int = field(default=0)
     """The number of executed operations"""
+
+    version: GraphStepRewardVersion
+    """The reward version"""
 
     max_operations: int
     """The maximum number of operations"""
@@ -66,6 +70,31 @@ class GraphStepReward:
         return self._calculate_reward() / 100.0
 
     def _calculate_reward(self) -> float:
+        if self.version == GraphStepRewardVersion.V0:
+            return self._calculate_reward_v0()
+        if self.version == GraphStepRewardVersion.V1:
+            return self._calculate_reward_v1()
+        raise GraphStepRewardException(f'Reward version {self.version} is not supported')
+
+    def _calculate_reward_v0(self) -> float:
+        depth_penalty = -(10 / self.max_depth) * self.depth
+        if self.action.type == ActionType.Backtrack:
+            return -20
+        if self._is_invalid:
+            if self._is_final:
+                return -100
+            return -10
+        if self._score is None:
+            return 10 + depth_penalty
+        if self._score:
+            if self._is_final:
+                return 100
+            return 10 + depth_penalty
+        if self._is_final:
+            return -20 + depth_penalty
+        return -10 + depth_penalty
+
+    def _calculate_reward_v1(self) -> float:
         n_ops_penalty = -(10 / self.max_operations) * self.n_operations
         n_depth_penalty = -(10 / self.max_depth) * self.depth
         if self.action.type == ActionType.Backtrack:
@@ -85,4 +114,10 @@ class GraphStepReward:
         return -10 + n_depth_penalty
 
 
+class GraphStepRewardException(Exception):
+    """
+    An exception that is raised in context of the graph step reward.
+    """
 
+    def __init__(self, message: str) -> None:
+        super().__init__(message)

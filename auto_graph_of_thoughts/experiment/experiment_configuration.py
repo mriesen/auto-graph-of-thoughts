@@ -3,6 +3,7 @@ from typing import Sequence, Set
 
 from pure_graph_of_thoughts.api.task import Task
 from .language_model_simulation_type import LanguageModelSimulationType
+from ..env import GraphStepRewardVersion
 from ..obs import ObservationComponent
 
 
@@ -16,6 +17,9 @@ class ExperimentConfiguration:
 
     task: Task
     """The task to use"""
+
+    reward_version: GraphStepRewardVersion
+    """The reward version to use"""
 
     max_steps: int
     """The maximum number of steps per episode"""

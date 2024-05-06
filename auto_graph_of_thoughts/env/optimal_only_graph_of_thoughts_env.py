@@ -1,8 +1,9 @@
 from typing import Mapping, Tuple, SupportsFloat, Dict, Any
 
 from pure_graph_of_thoughts.api.task import Task
-from . import ActionType
+from .action_type import ActionType
 from .graph_of_thoughts_env import GraphOfThoughtsEnv, ObsType, GraphOfThoughtsEnvException
+from .graph_step_reward_version import GraphStepRewardVersion
 from .layer_action import LayerAction
 from ..controller import ContinuousGraphController
 
@@ -22,6 +23,7 @@ class OptimalOnlyGraphOfThoughtsEnv(GraphOfThoughtsEnv):
             controller: ContinuousGraphController,
             seed: int,
             max_steps: int,
+            reward_version: GraphStepRewardVersion,
             optimal_path: Mapping[int, LayerAction]
     ):
         """
@@ -29,10 +31,11 @@ class OptimalOnlyGraphOfThoughtsEnv(GraphOfThoughtsEnv):
         :param task: task to solve
         :param controller: underlying controller
         :param seed: seed for random number generator
+        :param reward_version: reward version
         :param max_steps: maximum number of steps per episode
         :param optimal_path: optimal path
         """
-        super().__init__(task, controller, seed, max_steps)
+        super().__init__(task, controller, seed, reward_version, max_steps)
         self._optimal_path = optimal_path
 
     def _process_step(self, action: LayerAction) -> Tuple[ObsType, SupportsFloat, bool, bool, Dict[str, Any]]:

@@ -66,6 +66,7 @@ class Experiment:
                 config.task,
                 controller,
                 seed=config.seed,
+                reward_version=config.reward_version,
                 max_steps=config.max_steps
         )
 
