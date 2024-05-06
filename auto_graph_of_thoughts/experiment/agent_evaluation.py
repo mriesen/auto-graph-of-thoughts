@@ -29,7 +29,7 @@ class AgentEvaluation:
 
     @property
     def solved_rate_train_complexities(self) -> float:
-        """The rate of solved tasks for train complexities"""
+        """The rate of solved tasks for training complexities"""
         episodes = [episode for episode in self.episodes if episode.complexity in self.train_complexities]
         return len([episode for episode in episodes if episode.is_solved]) / len(episodes)
 
@@ -58,5 +58,7 @@ class AgentEvaluation:
                 name=self.name,
                 n_episodes_per_complexity=self.n_episodes_per_complexity,
                 solved_rate_per_complexity=solved_rate_by_complexity,
-                avg_n_operations_per_complexity=avg_n_operations_by_complexity
+                avg_n_operations_per_complexity=avg_n_operations_by_complexity,
+                eval_complexities=list(self.eval_complexities),
+                train_complexities=list(self.train_complexities)
         )
