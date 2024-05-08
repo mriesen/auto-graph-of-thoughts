@@ -23,6 +23,14 @@ class Experiment:
     def __init__(self, config: ExperimentConfiguration) -> None:
         self._config = config
 
+    def create_unwrapped_train_env(self) -> GraphOfThoughtsEnv:
+        """
+        Creates an unwrapped training environment.
+        :return: unwrapped training environment
+        """
+        controller = self._create_controller(self._config, self._config.train_complexities)
+        return self._create_env(self._config, controller)
+
     def create_filtered_train_env(self) -> DictObsFilterWrapper:
         """
         Creates a filtered train environment.

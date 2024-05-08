@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Optional, Self
 
-from .graph_step_reward_version import GraphStepRewardVersion
 from .action_type import ActionType
+from .graph_step_reward_version import GraphStepRewardVersion
 from .layer_action import LayerAction
 
 
@@ -74,9 +74,68 @@ class GraphStepReward:
             return self._calculate_reward_v0()
         if self.version == GraphStepRewardVersion.V1:
             return self._calculate_reward_v1()
+        if self.version == GraphStepRewardVersion.V2:
+            return self._calculate_reward_v2()
+        if self.version == GraphStepRewardVersion.V3:
+            return self._calculate_reward_v3()
+        if self.version == GraphStepRewardVersion.V4:
+            return self._calculate_reward_v4()
+        if self.version == GraphStepRewardVersion.V5:
+            return self._calculate_reward_v5()
+        if self.version == GraphStepRewardVersion.V6:
+            return self._calculate_reward_v6()
         raise GraphStepRewardException(f'Reward version {self.version} is not supported')
 
     def _calculate_reward_v0(self) -> float:
+        """
+        Placeholder reward function
+        :return: 0 reward
+        """
+        return 0
+
+    def _calculate_reward_v1(self) -> float:
+        """
+        Sparse reward function with depth penalty.
+        :return: reward
+        """
+        n_depth_penalty = -(10 / self.max_depth) * self.depth
+        if self._score and self._is_final:
+            return 100
+        return n_depth_penalty
+
+    def _calculate_reward_v2(self) -> float:
+        """
+        Sparse reward function with depth penalty and invalid signal.
+        :return: reward
+        """
+        n_depth_penalty = -(10 / self.max_depth) * self.depth
+        if self._is_invalid:
+            return -10
+        if self._score and self._is_final:
+            return 100
+        return -10 + n_depth_penalty
+
+    def _calculate_reward_v3(self) -> float:
+        """
+        Reward function with intermediate rewards, depth penalty and invalid signal.
+        :return: reward
+        """
+        n_depth_penalty = -(10 / self.max_depth) * self.depth
+        if self._is_invalid:
+            return -10
+        if self._score:
+            if self._is_final:
+                return 100
+            return 10
+        if self._score is None:
+            return 5 + n_depth_penalty
+        return -10 + n_depth_penalty
+
+    def _calculate_reward_v4(self) -> float:
+        """
+        Reward function with intermediate rewards, depth penalty, invalid signal and backtrack action penalty.
+        :return: reward
+        """
         depth_penalty = -(10 / self.max_depth) * self.depth
         if self.action.type == ActionType.Backtrack:
             return -20
@@ -94,8 +153,11 @@ class GraphStepReward:
             return -20 + depth_penalty
         return -10 + depth_penalty
 
-    def _calculate_reward_v1(self) -> float:
-        n_ops_penalty = -(10 / self.max_operations) * self.n_operations
+    def _calculate_reward_v5(self) -> float:
+        """
+        Reward function with intermediate rewards, depth penalty, invalid signal and complex backtrack action penalty.
+        :return: reward
+        """
         n_depth_penalty = -(10 / self.max_depth) * self.depth
         if self.action.type == ActionType.Backtrack:
             if self.prev_scored is not None and not self.prev_scored:
@@ -112,6 +174,29 @@ class GraphStepReward:
         if self._is_final:
             return -20 + n_depth_penalty
         return -10 + n_depth_penalty
+
+    def _calculate_reward_v6(self) -> float:
+        """
+        Reward function with intermediate rewards, operation penalty,
+        invalid signal and complex backtrack action penalty.
+        :return: reward
+        """
+        n_ops_penalty = -(10 / self.max_operations) * self.n_operations
+        if self.action.type == ActionType.Backtrack:
+            return -20
+        if self._is_invalid:
+            if self._is_final:
+                return -100
+            return -10
+        if self._score is None:
+            return 10 + n_ops_penalty
+        if self._score:
+            if self._is_final:
+                return 100
+            return 10 + n_ops_penalty
+        if self._is_final:
+            return -20 + n_ops_penalty
+        return -10 + n_ops_penalty
 
 
 class GraphStepRewardException(Exception):
