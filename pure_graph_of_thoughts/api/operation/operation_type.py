@@ -6,6 +6,6 @@ class OperationType(Enum):
     Represents a type of operation.
     """
 
-    generate = 'generate'
-    aggregate = 'aggregate'
-    score = 'score'
+    GENERATE = 'generate'
+    AGGREGATE = 'aggregate'
+    SCORE = 'score'
