@@ -10,14 +10,14 @@ from pure_graph_of_thoughts.api.graph.thought import GraphOfThoughts
 from pure_graph_of_thoughts.api.operation import Operation
 from pure_graph_of_thoughts.api.state import State
 from pure_graph_of_thoughts.api.task import Task, InvertedOperationIndex
-from .graph_step_reward_version import GraphStepRewardVersion
 from .action_type import ActionType
 from .graph_observation_component import GraphObservationComponent
 from .graph_step_reward import GraphStepReward
+from .graph_step_reward_version import GraphStepRewardVersion
 from .layer_action import LayerAction
 from ..controller import ContinuousGraphController, LayerActionResult
 from ..obs import ObservationComponent
-from ..space import MultiSpace, BoolSpace, OrdinalDiscreteSpace, OptionalBoolSpace, MultiDiscreteSpace
+from ..space import MultiSpace, OrdinalDiscreteSpace, OptionalBoolSpace, MultiDiscreteSpace
 
 ObsType = Mapping[str, Any]
 ActType = np.int64
@@ -154,7 +154,6 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         return self._transform_observation({
             GraphObservationComponent.DEPTH: self.current_depth,
             GraphObservationComponent.BREADTH: self.current_breadth,
-            GraphObservationComponent.DIVERGENCE: self._controller.divergence,
             GraphObservationComponent.COMPLEXITY: self._controller.complexity,
             GraphObservationComponent.LOCAL_COMPLEXITY: self._controller.local_complexity,
             GraphObservationComponent.GRAPH_OPERATIONS: [
@@ -209,7 +208,6 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         observation_space = MultiSpace.of({
             GraphObservationComponent.DEPTH: OrdinalDiscreteSpace(depth_representation, seed=seed),
             GraphObservationComponent.BREADTH: OrdinalDiscreteSpace(breadth_representation, seed=seed),
-            GraphObservationComponent.DIVERGENCE: BoolSpace(seed=seed),
             GraphObservationComponent.COMPLEXITY: OrdinalDiscreteSpace(self.max_complexity, start=1, seed=seed),
             GraphObservationComponent.LOCAL_COMPLEXITY: OrdinalDiscreteSpace(self.max_complexity + 1, start=0,
                                                                              seed=seed),

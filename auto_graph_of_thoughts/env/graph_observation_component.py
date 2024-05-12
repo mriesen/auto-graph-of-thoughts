@@ -13,4 +13,3 @@ class GraphObservationComponent(ObservationComponent):
     GRAPH_OPERATIONS = 'graph_operations'
     PREV_ACTIONS = 'prev_actions'
     PREV_SCORE = 'prev_score'
-    DIVERGENCE = 'divergence'
