@@ -51,12 +51,12 @@ class OptimalOnlyGraphOfThoughtsEnv(GraphOfThoughtsEnv):
             self._truncated = True
         elif action != optimal_action:
             reward = -0.1
-        elif action.type == ActionType.AppendOperation:
+        elif action.type == ActionType.APPEND_OPERATION:
             reward = 0.1
             if action.operation is None:
                 raise GraphOfThoughtsEnvException('Operation is None')
             result = self._controller.append_layer(action.operation)
-        elif action.type == ActionType.Stop:
+        elif action.type == ActionType.STOP:
             self._terminated = True
             reward = 1.0
 

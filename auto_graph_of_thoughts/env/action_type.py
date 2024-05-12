@@ -6,11 +6,11 @@ class ActionType(Enum):
     Represents a type of action.
     """
 
-    Stop = 0
+    STOP = 0
     """Action type for stopping"""
 
-    Backtrack = 1
+    BACKTRACK = 1
     """Action type for backtracking"""
 
-    AppendOperation = 2
+    APPEND_OPERATION = 2
     """Action type for appending an operation"""

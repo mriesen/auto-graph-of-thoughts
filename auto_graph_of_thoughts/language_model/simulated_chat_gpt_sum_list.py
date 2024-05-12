@@ -62,9 +62,9 @@ def _get_sum_list_probability(prompt: Prompt, state: State) -> float:
     if 'sum' in state:
         return _sum_list_probabilities[1]
     if 'list' in state:
-        cardinality = len(state['list'])
-        if cardinality in _sum_list_probabilities:
-            return _sum_list_probabilities[cardinality]
+        length = len(state['list'])
+        if length in _sum_list_probabilities:
+            return _sum_list_probabilities[length]
     return 0.0
 
 
@@ -143,7 +143,7 @@ def create_simulated_realistic_chat_gpt_sum_list(seed: int) -> SimulatedLanguage
     return simulated_chat_gpt
 
 
-def create_simulated_clipped_chat_gpt_sum_list(seed: int) -> SimulatedLanguageModel:
+def create_simulated_deterministic_chat_gpt_sum_list(seed: int) -> SimulatedLanguageModel:
     """
     Creates a simulated ChatGPT instance for the task sum_list.
     The probabilities are either 1.0 or 0.0.

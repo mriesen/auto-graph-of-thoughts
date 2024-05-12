@@ -6,11 +6,11 @@ class GraphObservationComponent(ObservationComponent):
     Represents a component of an observation.
     """
 
-    depth = 'depth'
-    breadth = 'breadth'
-    complexity = 'complexity'
-    local_complexity = 'local_complexity'
-    graph_operations = 'graph_operations'
-    prev_actions = 'prev_actions'
-    prev_score = 'prev_score'
-    divergence = 'divergence'
+    DEPTH = 'depth'
+    BREADTH = 'breadth'
+    COMPLEXITY = 'complexity'
+    LOCAL_COMPLEXITY = 'local_complexity'
+    GRAPH_OPERATIONS = 'graph_operations'
+    PREV_ACTIONS = 'prev_actions'
+    PREV_SCORE = 'prev_score'
+    DIVERGENCE = 'divergence'

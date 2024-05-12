@@ -12,10 +12,9 @@ def generate_init_state(rnd: Random, complexities: Sequence[int]) -> Tuple[int, 
     :return:
     """
     complexity = rnd.choice(complexities)
-    list_cardinality = complexity
     init_state: State = {
         'list': [
-            rnd.randint(0, 9) for _ in range(list_cardinality)
+            rnd.randint(0, 9) for _ in range(complexity)
         ]
 
     }

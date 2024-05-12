@@ -118,7 +118,7 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
 
     @property
     def _optional_action_representation(self) -> int:
-        return len([ActionType.Stop, ActionType.Backtrack]) + len(self._task.operations) + 1
+        return len([ActionType.STOP, ActionType.BACKTRACK]) + len(self._task.operations) + 1
 
     @property
     def _prev_score(self) -> Optional[bool]:
@@ -133,10 +133,10 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
     @property
     def _all_actions(self) -> Sequence[LayerAction]:
         return [
-            LayerAction(ActionType.Stop),
-            LayerAction(ActionType.Backtrack),
+            LayerAction(ActionType.STOP),
+            LayerAction(ActionType.BACKTRACK),
         ] + [
-            LayerAction(ActionType.AppendOperation, operation)
+            LayerAction(ActionType.APPEND_OPERATION, operation)
             for operation in self._task.operations
         ]
 
@@ -152,19 +152,19 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
     @property
     def _observation(self) -> ObsType:
         return self._transform_observation({
-            GraphObservationComponent.depth: self.current_depth,
-            GraphObservationComponent.breadth: self.current_breadth,
-            GraphObservationComponent.divergence: self._controller.divergence,
-            GraphObservationComponent.complexity: self._controller.complexity,
-            GraphObservationComponent.local_complexity: self._controller.local_complexity,
-            GraphObservationComponent.graph_operations: [
+            GraphObservationComponent.DEPTH: self.current_depth,
+            GraphObservationComponent.BREADTH: self.current_breadth,
+            GraphObservationComponent.DIVERGENCE: self._controller.divergence,
+            GraphObservationComponent.COMPLEXITY: self._controller.complexity,
+            GraphObservationComponent.LOCAL_COMPLEXITY: self._controller.local_complexity,
+            GraphObservationComponent.GRAPH_OPERATIONS: [
                 self.encode_optional_operation(operation) for operation in self._graph_operations
             ],
-            GraphObservationComponent.prev_actions: [
+            GraphObservationComponent.PREV_ACTIONS: [
                 self.encode_optional_action(prev_action)
                 for prev_action in self._prev_actions[-self._action_lookback:]
             ],
-            GraphObservationComponent.prev_score: self._prev_score
+            GraphObservationComponent.PREV_SCORE: self._prev_score
         })
 
     def __init__(
@@ -205,29 +205,29 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         n_operations: int = len(self._task.operations)
         depth_representation: int = self.max_depth + 1
         breadth_representation: int = self.max_breadth + 1
-        action_representation: int = len([ActionType.Stop, ActionType.Backtrack]) + n_operations
+        action_representation: int = len([ActionType.STOP, ActionType.BACKTRACK]) + n_operations
         observation_space = MultiSpace.of({
-            GraphObservationComponent.depth: OrdinalDiscreteSpace(depth_representation, seed=seed),
-            GraphObservationComponent.breadth: OrdinalDiscreteSpace(breadth_representation, seed=seed),
-            GraphObservationComponent.divergence: BoolSpace(seed=seed),
-            GraphObservationComponent.complexity: OrdinalDiscreteSpace(self.max_complexity, start=1, seed=seed),
-            GraphObservationComponent.local_complexity: OrdinalDiscreteSpace(self.max_complexity + 1, start=0,
+            GraphObservationComponent.DEPTH: OrdinalDiscreteSpace(depth_representation, seed=seed),
+            GraphObservationComponent.BREADTH: OrdinalDiscreteSpace(breadth_representation, seed=seed),
+            GraphObservationComponent.DIVERGENCE: BoolSpace(seed=seed),
+            GraphObservationComponent.COMPLEXITY: OrdinalDiscreteSpace(self.max_complexity, start=1, seed=seed),
+            GraphObservationComponent.LOCAL_COMPLEXITY: OrdinalDiscreteSpace(self.max_complexity + 1, start=0,
                                                                              seed=seed),
-            GraphObservationComponent.graph_operations: MultiDiscreteSpace(
+            GraphObservationComponent.GRAPH_OPERATIONS: MultiDiscreteSpace(
                     [
                         self._optional_operation_representation
                         for _ in range(self.max_depth)
                     ],
                     seed=seed
             ),
-            GraphObservationComponent.prev_actions: MultiDiscreteSpace(
+            GraphObservationComponent.PREV_ACTIONS: MultiDiscreteSpace(
                     [
                         self._optional_action_representation
                         for _ in range(self._action_lookback)
                     ],
                     seed=seed
             ),
-            GraphObservationComponent.prev_score: OptionalBoolSpace(seed=seed)
+            GraphObservationComponent.PREV_SCORE: OptionalBoolSpace(seed=seed)
         }, seed=seed)
         self.observation_space = observation_space
         self._transform_observation = observation_space.transform
@@ -279,7 +279,7 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
 
         self._prev_actions.append(action)
 
-        if action.type == ActionType.Stop:
+        if action.type == ActionType.STOP:
             self._terminated = True
             reward = self._calculate_final_reward(reward)
             info['solved'] = reward.is_solved
@@ -287,9 +287,9 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
             return self._observation, reward, self._terminated, self._truncated, info
 
         result: Optional[LayerActionResult] = None
-        if action.type == ActionType.Backtrack:
+        if action.type == ActionType.BACKTRACK:
             result = self._controller.remove_sink_layer()
-        elif action.type == ActionType.AppendOperation:
+        elif action.type == ActionType.APPEND_OPERATION:
             if action.operation is None:
                 raise GraphOfThoughtsEnvException('Operation to append is None')
             result = self._controller.append_layer(action.operation)
@@ -356,8 +356,8 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         scalar = encoded_action.item()
         if scalar <= 1:
             return LayerAction(ActionType(scalar))
-        operation_index = scalar - ActionType.AppendOperation.value
-        return LayerAction(type=ActionType.AppendOperation, operation=self.decode_operation(operation_index))
+        operation_index = scalar - ActionType.APPEND_OPERATION.value
+        return LayerAction(type=ActionType.APPEND_OPERATION, operation=self.decode_operation(operation_index))
 
     def encode_action(self, action: LayerAction) -> int:
         """
@@ -365,11 +365,11 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         :param action: action to encode
         :return: encoded action
         """
-        if action.type != ActionType.AppendOperation:
+        if action.type != ActionType.APPEND_OPERATION:
             return int(action.type.value)
         if action.operation is None:
             raise GraphOfThoughtsEnvException('Operation is None')
-        return ActionType.AppendOperation.value + self.encode_operation(action.operation)
+        return ActionType.APPEND_OPERATION.value + self.encode_operation(action.operation)
 
     def encode_optional_action(self, action: Optional[LayerAction]) -> int:
         """
@@ -397,11 +397,11 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         :param action: action to validate
         :return: whether the action is valid
         """
-        if action.type == ActionType.Stop:
+        if action.type == ActionType.STOP:
             return True
-        if action.type == ActionType.Backtrack:
+        if action.type == ActionType.BACKTRACK:
             return self._controller.is_initialized
-        if action.type == ActionType.AppendOperation and action.operation is not None:
+        if action.type == ActionType.APPEND_OPERATION and action.operation is not None:
             return self._controller.validate_append_operation(action.operation)
         return False
 
