@@ -1,9 +1,9 @@
 from math import ceil
-from typing import Sequence, Optional, Callable, Tuple
+from typing import Sequence, Optional, Callable, Tuple, List, Dict
 
 from pure_graph_of_thoughts.api.controller import Controller, GraphOfOperationsExecution, ControllerException
+from pure_graph_of_thoughts.api.graph import GraphMutationException
 from pure_graph_of_thoughts.api.graph.operation import GraphOfOperations, OperationNode
-from pure_graph_of_thoughts.api.graph.operation import GraphOfOperationsException
 from pure_graph_of_thoughts.api.graph.thought import GraphOfThoughts
 from pure_graph_of_thoughts.api.language_model import LanguageModel
 from pure_graph_of_thoughts.api.operation import Operation, Complexity, AbsoluteComplexity, RelativeComplexity
@@ -21,6 +21,8 @@ class ContinuousGraphController(Controller):
     _complexity: int
 
     _local_complexity: int
+
+    _local_complexities: Dict[int, int]
 
     _init_state: State
 
@@ -145,6 +147,7 @@ class ContinuousGraphController(Controller):
         self._execution = None
         self._complexity, self._init_state = self._generate_init_state()
         self._local_complexity = self._complexity
+        self._local_complexities = {}
         self._n_operations = 0
 
     def append_layer(self, operation: Operation) -> LayerActionResult:
@@ -169,6 +172,8 @@ class ContinuousGraphController(Controller):
             # process valid first operation
             self._initialize_controller(operation)
             self._execute_sink_layer()
+
+            self._local_complexities[self.graph_of_operations.sink_layer_index] = self._local_complexity
             return self._create_layer_action_result()
 
         predecessor_n_outputs, n_operations = self._prepare_append_operation(operation)
@@ -186,6 +191,7 @@ class ContinuousGraphController(Controller):
         self._local_complexity = local_complexity
         self.graph_of_operations.append_layer(operation_nodes)
         self._execute_sink_layer()
+        self._local_complexities[self.graph_of_operations.sink_layer_index] = self._local_complexity
         return self._create_layer_action_result()
 
     def _prepare_append_operation(self, operation: Operation) -> Tuple[int, int]:
@@ -248,10 +254,14 @@ class ContinuousGraphController(Controller):
         if not self.is_initialized:
             return LayerActionResult.invalid()
         graph_of_operations = self.graph_of_operations
+        graph_of_thoughts = self.graph_of_thoughts
         try:
             graph_of_operations.remove_layer(graph_of_operations.sink_layer_index)
+            if graph_of_thoughts is not None:
+                graph_of_thoughts.remove_layer(graph_of_thoughts.sink_layer_index)
+            self._local_complexity = self._local_complexities[graph_of_operations.sink_layer_index]
             return self._create_layer_action_result()
-        except GraphOfOperationsException:
+        except GraphMutationException:
             return LayerActionResult.invalid()
 
     def _create_layer_action_result(self) -> LayerActionResult:
@@ -288,4 +298,5 @@ class ContinuousGraphController(Controller):
         self._execution = None
         self._complexity, self._init_state = self._generate_init_state()
         self._local_complexity = self._complexity
+        self._local_complexities = {}
         self._n_operations = 0
