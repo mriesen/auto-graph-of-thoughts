@@ -56,21 +56,6 @@ class GraphOfOperations(Graph[OperationNode, OperationGraphSchema]):
         predecessor_nodes: Sequence[OperationNode] = self.layers[-1]
         self._connect_layer(predecessor_nodes, successor_nodes)
 
-    @mutating(scope=MutationScope.SELF)
-    def remove_layer(self, layer_index: int) -> None:
-        """
-        Removes the layer at the given index from the graph.
-        This causes the removal of all successive layers as well.
-        :param layer_index: index of the layer to remove
-        """
-        if layer_index == 0:
-            raise GraphOfOperationsException('Cannot remove layer at position 0')
-        if layer_index > self.sink_layer_index:
-            raise GraphOfOperationsException('Layer to remove at the given position does not exist')
-        operation_nodes: Sequence[OperationNode] = self.layers[layer_index - 1]
-        for operation_node in operation_nodes:
-            operation_node.remove_all_successors()
-
     def __deepcopy__(self, memo: Dict[Any, Any]) -> Self:
         operations: Sequence[Operation] = [node.operation for node in self.nodes]
         return self.from_schema(self.to_schema(), operations)

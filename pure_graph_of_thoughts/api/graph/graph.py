@@ -8,8 +8,7 @@ from .graph_schema import GraphSchema
 from .node import Node
 from .node_schema import NodeSchema
 from ..internal.id import Id
-from ..internal.seal import Sealable
-from ..operation import Operation
+from ..internal.seal import Sealable, mutating, MutationScope
 
 N = TypeVar('N', bound=Node)
 """The node type"""
@@ -103,6 +102,21 @@ class Graph(Sealable, ABC, Generic[N, S]):
             len(layer) for layer in self.layers
         ])
 
+    @mutating(scope=MutationScope.SELF)
+    def remove_layer(self, layer_index: int) -> None:
+        """
+        Removes the layer at the given index from the graph.
+        This causes the removal of all successive layers as well.
+        :param layer_index: index of the layer to remove
+        """
+        if layer_index == 0:
+            raise GraphMutationException('Cannot remove layer at position 0')
+        if layer_index > self.sink_layer_index:
+            raise GraphMutationException('Layer to remove at the given position does not exist')
+        nodes: Sequence[N] = self.layers[layer_index - 1]
+        for node in nodes:
+            node.remove_all_successors()
+
     def seal(self) -> None:
         super().seal()
         self._source.seal()
@@ -174,3 +188,12 @@ class Graph(Sealable, ABC, Generic[N, S]):
         :return: deep copy
         """
         return copy.deepcopy(self)
+
+
+class GraphMutationException(Exception):
+    """
+    An exception raised when a mutation of a graph fails.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
