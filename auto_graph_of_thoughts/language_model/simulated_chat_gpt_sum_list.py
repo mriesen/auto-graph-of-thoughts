@@ -98,7 +98,8 @@ def _split_list(prompt: Prompt, state: State) -> State:
         if 'sum' in state:
             return {
                 'lists': [
-                    [state['sum']]
+                    [state['sum']],
+                    []
                 ]
             }
         if 'lists' in state:
@@ -106,7 +107,10 @@ def _split_list(prompt: Prompt, state: State) -> State:
     l: Sequence[int] = state['list']
     if len(l) == 0:
         return {
-            'lists': []
+            'lists': [
+                [],
+                []
+            ]
         }
     return {
         'lists': [
