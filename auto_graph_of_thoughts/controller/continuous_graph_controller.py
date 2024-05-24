@@ -251,7 +251,7 @@ class ContinuousGraphController(Controller):
         Removes the sink layer of the graph of operations.
         :return: action result
         """
-        if not self.is_initialized:
+        if not self.is_initialized or self.graph_of_operations.sink_layer_index == 0:
             return LayerActionResult.invalid()
         graph_of_operations = self.graph_of_operations
         graph_of_thoughts = self.graph_of_thoughts

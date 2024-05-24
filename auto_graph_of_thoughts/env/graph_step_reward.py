@@ -159,11 +159,11 @@ class GraphStepReward:
         :return: reward
         """
         n_depth_penalty = -(10 / self.max_depth) * self.depth
+        if self._is_invalid:
+            return -10
         if self.action.type == ActionType.BACKTRACK:
             if self.prev_scored is not None and not self.prev_scored:
                 return 5
-            return -10
-        if self._is_invalid:
             return -10
         if self._score is None:
             return 10 + n_depth_penalty
@@ -182,11 +182,11 @@ class GraphStepReward:
         :return: reward
         """
         n_ops_penalty = -(10 / self.max_operations) * self.n_operations
+        if self._is_invalid:
+            return -10
         if self.action.type == ActionType.BACKTRACK:
             if self.prev_scored is not None and not self.prev_scored:
                 return 5
-            return -10
-        if self._is_invalid:
             return -10
         if self._score is None:
             return 10 + n_ops_penalty

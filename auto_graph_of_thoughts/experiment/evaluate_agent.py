@@ -23,6 +23,7 @@ def evaluate_agent(
     episodes = []
     for complexity in experiment.config.eval_complexities:
         env, filtered_env = experiment.created_eval_env_tuple([complexity])
+        filtered_env.reset(seed=experiment.config.seed)
         for index in range(n_episodes_per_complexity):
             obs, _ = filtered_env.reset()
             complexity = env.complexity

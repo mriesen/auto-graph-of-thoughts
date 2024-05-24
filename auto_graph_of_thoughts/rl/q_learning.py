@@ -58,6 +58,7 @@ class QLearning:
         action_space: spaces.Discrete = self._env.action_space
         action_space.seed(self._seed)
         self._Q = np.zeros((observation_space.n, action_space.n), dtype=np.float32)
+        self._env.reset(seed=seed)
 
     def learn(self, total_episodes: int, verbose: bool = False) -> None:
         """
@@ -70,7 +71,7 @@ class QLearning:
             terminated = False
             truncated = False
             total_rewards = 0.0
-            state, _ = self._env.reset(seed=self._seed)
+            state, _ = self._env.reset()
 
             while not terminated and not truncated:
                 if self._np_random.uniform(0, 1) < self._epsilon:
