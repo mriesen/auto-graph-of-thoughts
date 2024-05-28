@@ -20,13 +20,13 @@ authors = [
     { name = "Manuel Riesen", email = "manuelnoah.riesen@students.bfh.ch" }
 ]
 maintainers = [
-    { name = "Manuel Riesen", email = "manuelnoah.riesen@students.bfh.ch" }
+    { name = "Manuel Riesen", email = "manuel.riesen0@gmail.com" }
 ]
 description = "Automated Graph of Thoughts"
 readme = "README.md"
 license-files = { paths = ["LICENSE"] }
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3.11",
@@ -94,4 +94,4 @@ warn_unreachable = true
 warn_return_any = true
 
 [project.urls]
-Repository = "https://gitlab.ti.bfh.ch/riesm1-bathesis/auto-graph-of-thoughts.git"
+Repository = "https://github.com/mriesen/auto-graph-of-thoughts.git"
