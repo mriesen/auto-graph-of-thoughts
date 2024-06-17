@@ -91,9 +91,9 @@ class ChatGPT(LanguageModel):
                 + self._cost.completion_token_cost * n_completion_tokens
         )
         self._add_cost(delta_cost)
-        self._logger.debug(f'Response ChatGPT: %s', response)
+        self._logger.debug('Response ChatGPT: %s', response)
         self._logger.debug(
-                f'Cost delta / total: %s %s / %s %s',
+                'Cost delta / total: %s %s / %s %s',
                 delta_cost, self._cost.currency,
                 self._total_cost, self._cost.currency
         )
