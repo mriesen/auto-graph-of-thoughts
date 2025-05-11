@@ -136,3 +136,5 @@ sum_list_task = Task(
                                              and sum(initial_state['list']) == state['sum']
         )
 )
+
+

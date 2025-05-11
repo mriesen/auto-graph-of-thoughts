@@ -56,11 +56,12 @@ class Experiment:
 
     @staticmethod
     def _create_controller(config: ExperimentConfiguration, complexities: Sequence[int]) -> ContinuousGraphController:
-        language_model = config.lm_simulation_type.factory_function(config.seed)
+        factory_function = config.lm_simulation_type.get_factory_function(config.task)
+        language_model = factory_function(config.seed)
         rnd = Random(config.seed)
         return ContinuousGraphController(
                 language_model=language_model,
-                generate_init_state=lambda: generate_init_state(rnd, complexities),
+                generate_init_state=lambda: generate_init_state(rnd, complexities, config.task),
                 max_depth=config.max_depth,
                 max_breadth=config.max_breadth,
                 divergence_cutoff_factor=config.divergence_cutoff_factor,

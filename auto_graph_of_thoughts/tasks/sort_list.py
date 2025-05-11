@@ -1,5 +1,8 @@
+from typing import Sequence, Optional
+
 from pure_graph_of_thoughts.api.language_model import Prompt, Example
-from pure_graph_of_thoughts.api.operation import PromptOperation, OperationType, relative_complexity, ScoreExecOperation
+from pure_graph_of_thoughts.api.operation import PromptOperation, OperationType, relative_complexity, \
+    ScoreExecOperation, ExecOperation, absolute_complexity
 from pure_graph_of_thoughts.api.state import State
 from pure_graph_of_thoughts.api.task import Task, Evaluator
 
@@ -70,6 +73,24 @@ op_merge = PromptOperation(
 )
 
 
+def count_number_of_sort_errors(sorted_list: Sequence[int], current_list: Sequence[int]) -> Optional[int]:
+    """
+    Counts the number or sort errors in the given current list, based on a given sorted list.
+    :param sorted_list: sorted list (expected)
+    :param current_list: current list (actual)
+    :return: number of errors
+    """
+    if len(sorted_list) != len(current_list):
+        return None
+
+    error_count = 0
+    for i in range(len(sorted_list)):
+        if sorted_list[i] != current_list[i]:
+            error_count += 1
+
+    return error_count
+
+
 def score_op_sort(cumulative_score: float, previous_state: State, current_state: State) -> float:
     """
     Determines the score of the sort operation.
@@ -78,20 +99,22 @@ def score_op_sort(cumulative_score: float, previous_state: State, current_state:
     :param current_state: current state
     :return: score
     """
+
     if cumulative_score < 0.0:
         return -1.0
     current_list = current_state['list'] if 'list' in current_state else None
-    previous_list = (
+    sorted_list = (
         sorted(previous_state['list']) if 'list' in previous_state
         else sorted(
                 list_item for state_list in previous_state['lists'] for list_item in state_list
         ) if 'lists' in previous_state
         else None
     )
-    if current_list is not None and previous_list is not None and current_list == previous_list:
-        return 1.0
+    if current_list is not None and sorted_list is not None:
+        num_errors = count_number_of_sort_errors(sorted_list, current_list)
+        if num_errors is not None and num_errors == 0:
+            return 1.0
     return -1.0
-
 
 op_sort = PromptOperation(
         name='sort',
@@ -124,8 +147,31 @@ op_sort = PromptOperation(
         )
 )
 
+
+op_branch_5 = ExecOperation(
+    name='branch_5',
+    output_complexity=relative_complexity(1),
+    n_inputs=1,
+    n_outputs=5,
+    type=OperationType.GENERATE,
+    execute=lambda states: [
+        states[0] for _ in range(5)
+    ]
+)
+
+op_keep_best_from_5 = ExecOperation(
+    name='keep_best_from_5',
+    output_complexity=absolute_complexity(1),
+    n_inputs=5,
+    n_outputs=1,
+    type=OperationType.AGGREGATE,
+    execute=lambda states: [
+        max(states, key=lambda state: score_op_sort(0, state, state), default={})
+    ]
+)
+
 sort_list_task = Task(
-        operations=[op_sort, op_split, op_merge],
+        operations=[op_sort, op_split, op_merge, op_branch_5, op_keep_best_from_5],
         evaluator=Evaluator(
                 lambda initial_state, state: 'list' in initial_state
                                              and 'list' in state

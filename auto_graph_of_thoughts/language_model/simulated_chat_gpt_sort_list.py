@@ -62,8 +62,28 @@ def _get_sort_list_probability(prompt: Prompt, state: State) -> float:
             return _sort_list_probabilities[length]
     return 0.0
 
+def _merge_lists_correctly(prompt: Prompt, state: State) -> State:
+    if 'lists' not in state:
+        if 'list' in state:
+            return state
+    l: Sequence[List[int]] = state['lists']
+    if len(l) == 0:
+        return {
+            'list': []
+        }
+    if len(l) == 1:
+        return {
+            'list': l[0]
+        }
+    l1 = l[0]
+    l2 = l[1]
+    if isinstance(l1, list) and isinstance(l2, list):
+        return {
+            'list': sorted(l[0] + l[1])
+        }
 
-def _merge_lists(prompt: Prompt, state: State) -> State:
+
+def _merge_lists_incorrectly(prompt: Prompt, state: State) -> State:
     if 'lists' not in state:
         if 'list' in state:
             return state
@@ -125,7 +145,9 @@ def create_simulated_realistic_chat_gpt_sort_list(seed: int) -> SimulatedLanguag
                 ),
                 SimulatedLanguageModelBehavior(
                         prompt=op_merge.prompt,
-                        mocked_correct_behavior=_merge_lists,
+                        mocked_correct_behavior=_merge_lists_correctly,
+                        mocked_incorrect_behavior=_merge_lists_incorrectly,
+                        probability=_get_sort_list_probability
                 ),
             ])
     return simulated_chat_gpt
@@ -153,7 +175,7 @@ def create_simulated_deterministic_chat_gpt_sort_list(seed: int) -> SimulatedLan
                 ),
                 SimulatedLanguageModelBehavior(
                         prompt=op_merge.prompt,
-                        mocked_correct_behavior=_merge_lists,
+                        mocked_correct_behavior=_merge_lists_correctly,
                 ),
             ])
     return simulated_chat_gpt
