@@ -41,6 +41,9 @@ _sort_list_probabilities: Mapping[int, float] = {
     32: 0.14
 }
 
+
+_merge_list_probabilities: Mapping[int, float] = {1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 1.0, 6: 1.0, 7: 1.0, 8: 1.0} | {i: 1.0 - (i - 1) / (64 - 1) for i in range(8, 64 + 1)}
+
 def _sort_list_correctly(prompt: Prompt, state: State) -> State:
     if 'list' not in state:
         return {
@@ -62,6 +65,12 @@ def _get_sort_list_probability(prompt: Prompt, state: State) -> float:
             return _sort_list_probabilities[length]
     return 0.0
 
+def _get_merge_list_probability(prompt: Prompt, state: State) -> float:
+    length = len(state['list']) if 'list' in state else len(state['lists'][0]) if 'lists' in state else -1
+    if length in _merge_list_probabilities:
+        return _merge_list_probabilities[length]
+    return 0.0
+
 def _merge_lists_correctly(prompt: Prompt, state: State) -> State:
     if 'lists' not in state:
         if 'list' in state:
@@ -81,6 +90,7 @@ def _merge_lists_correctly(prompt: Prompt, state: State) -> State:
         return {
             'list': sorted(l[0] + l[1])
         }
+    raise
 
 
 def _merge_lists_incorrectly(prompt: Prompt, state: State) -> State:
@@ -102,6 +112,7 @@ def _merge_lists_incorrectly(prompt: Prompt, state: State) -> State:
         return {
             'list': l[0] + l[1]
         }
+    raise
 
 
 def _split_list(prompt: Prompt, state: State) -> State:
@@ -147,7 +158,7 @@ def create_simulated_realistic_chat_gpt_sort_list(seed: int) -> SimulatedLanguag
                         prompt=op_merge.prompt,
                         mocked_correct_behavior=_merge_lists_correctly,
                         mocked_incorrect_behavior=_merge_lists_incorrectly,
-                        probability=_get_sort_list_probability
+                        probability=_get_merge_list_probability
                 ),
             ])
     return simulated_chat_gpt
@@ -176,6 +187,8 @@ def create_simulated_deterministic_chat_gpt_sort_list(seed: int) -> SimulatedLan
                 SimulatedLanguageModelBehavior(
                         prompt=op_merge.prompt,
                         mocked_correct_behavior=_merge_lists_correctly,
+                        mocked_incorrect_behavior=_sort_list_incorrectly,
+                        probability=lambda p, s: 1.0 if _get_merge_list_probability(p, s) == 1.0 else 0.0
                 ),
             ])
     return simulated_chat_gpt
