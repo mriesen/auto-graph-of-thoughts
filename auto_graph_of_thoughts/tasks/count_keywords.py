@@ -192,7 +192,7 @@ def create_op_count(instruction: str, examples: Sequence[Example], keywords: Set
         )
     )
 
-def _create_keep_best_from_10(keywords: Set[str]):
+def _create_keep_best_from_10(keywords: Set[str]) -> ExecOperation:
     score_op = create_score_op_count(keywords)
     return ExecOperation(
         name='keep_best_from_10',

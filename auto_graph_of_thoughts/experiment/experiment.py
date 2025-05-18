@@ -2,7 +2,6 @@ from random import Random
 from typing import Sequence, Tuple, Optional
 
 from .experiment_configuration import ExperimentConfiguration
-from .generate_init_state import generate_init_state
 from ..controller import ContinuousGraphController
 from ..env import GraphOfThoughtsEnv
 from ..env.wrapper import DictObsFilterWrapper
@@ -61,7 +60,7 @@ class Experiment:
         rnd = Random(config.seed)
         return ContinuousGraphController(
                 language_model=language_model,
-                generate_init_state=lambda: generate_init_state(rnd, complexities, config.task),
+                generate_init_state=lambda: config.generate_init_state(rnd, complexities, config.task),
                 max_depth=config.max_depth,
                 max_breadth=config.max_breadth,
                 divergence_cutoff_factor=config.divergence_cutoff_factor,

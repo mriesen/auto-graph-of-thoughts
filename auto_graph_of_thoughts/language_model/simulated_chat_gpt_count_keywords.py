@@ -80,7 +80,7 @@ def _merge_counts(prompt: Prompt, state: State) -> State:
             'counts': c
         }
 
-    combined = Counter()
+    combined: Counter[str] = Counter()
     for count_dict in c:
         if isinstance(count_dict, dict):
             combined.update(count_dict)

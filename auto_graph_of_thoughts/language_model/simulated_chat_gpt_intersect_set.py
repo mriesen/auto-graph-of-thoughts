@@ -53,10 +53,6 @@ def _intersect_set_correctly(prompt: Prompt, state: State) -> State:
 
 
 def _intersect_set_incorrectly(prompt: Prompt, state: State) -> State:
-    if state is None:
-        return {
-            'intersection': []
-        }
     if 'set1' not in state or 'set2' not in state:
         return {
             'intersection': []
@@ -67,8 +63,6 @@ def _intersect_set_incorrectly(prompt: Prompt, state: State) -> State:
 
 
 def _get_intersect_set_probability(prompt: Prompt, state: State) -> float:
-    if state is None:
-        return 0.0
     if 'set1' in state and 'set2' in state:
         length = max(len(state['set1']), len(state['set2']))
         if length in _intersect_set_probabilities:

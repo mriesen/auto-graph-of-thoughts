@@ -1,6 +1,8 @@
 from dataclasses import dataclass
-from typing import Sequence, Set
+from random import Random
+from typing import Sequence, Set, Callable, Tuple
 
+from pure_graph_of_thoughts.api.state import State
 from pure_graph_of_thoughts.api.task import Task
 from .language_model_simulation_type import LanguageModelSimulationType
 from ..env import GraphStepRewardVersion
@@ -50,3 +52,6 @@ class ExperimentConfiguration:
 
     lm_simulation_type: LanguageModelSimulationType
     """The type of language model simulation"""
+
+    generate_init_state: Callable[[Random, Sequence[int], Task], Tuple[int, State]]
+    """The initial state generator returning a tuple of complexity and initial state"""
