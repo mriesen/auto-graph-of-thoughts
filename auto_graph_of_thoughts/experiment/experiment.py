@@ -5,6 +5,7 @@ from .experiment_configuration import ExperimentConfiguration
 from ..controller import ContinuousGraphController
 from ..env import GraphOfThoughtsEnv
 from ..env.wrapper import DictObsFilterWrapper
+from auto_graph_of_thoughts.experiment.experiment_task_type import ExperimentTaskType
 
 
 class Experiment:
@@ -55,8 +56,9 @@ class Experiment:
 
     @staticmethod
     def _create_controller(config: ExperimentConfiguration, complexities: Sequence[int]) -> ContinuousGraphController:
-        factory_function = config.lm_simulation_type.get_factory_function(config.task)
-        language_model = factory_function(config.seed)
+        task_type = config.task_type if config.task_type is not None else ExperimentTaskType.from_task(config.task)
+        factory_function = config.lm_simulation_type.get_factory_function(task_type)
+        language_model = factory_function(config.seed, config.extra_args)
         rnd = Random(config.seed)
         return ContinuousGraphController(
                 language_model=language_model,

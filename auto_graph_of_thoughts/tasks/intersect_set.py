@@ -1,4 +1,4 @@
-from typing import Set, Optional
+from typing import Set, Optional, Sequence
 
 from pure_graph_of_thoughts.api.language_model import Prompt, Example
 from pure_graph_of_thoughts.api.operation import PromptOperation, OperationType, relative_complexity, \
@@ -133,12 +133,13 @@ def _get_previous_sets(previous_state: State) -> Optional[Set[int]]:
     return None
 
 
-def score_op_intersect(cumulative_score: float, previous_state: State, current_state: State) -> float:
+def score_op_intersect(cumulative_score: float, previous_state: State, current_state: State, output_states: Sequence[State]) -> float:
     """
     Determines the score of the intersection operation.
     :param cumulative_score: cumulative score
     :param previous_state: previous state
     :param current_state: current state
+    :param output_states: output states
     :return: score
     """
     if cumulative_score < 0.0:
@@ -200,17 +201,17 @@ op_branch_5 = ExecOperation(
 
 op_keep_best_from_5 = ExecOperation(
     name='keep_best_from_5',
-    output_complexity=absolute_complexity(1),
+    output_complexity=relative_complexity(1),
     n_inputs=5,
     n_outputs=1,
     type=OperationType.AGGREGATE,
     execute=lambda states: [
-        max(states, key=lambda state: score_op_intersect(0, state, state), default={})
+        max(states, key=lambda state: score_op_intersect(0, state, state, states), default={})
     ]
 )
 
 intersect_set_task = Task(
-        operations=[op_noop, op_intersect, op_branch_5, op_keep_best_from_5],
+        operations=[op_intersect, op_branch_5, op_keep_best_from_5],
         evaluator=Evaluator(
                 lambda initial_state, state: 'set1' in initial_state and 'set2' in initial_state
                                              and 'intersection' in state

@@ -88,12 +88,17 @@ class GraphGenerator(ABC):
             operation_array = operation_array_result
         return GraphOfOperations.from_operation_array(operation_array)
 
-    def generate_singleton_graph(self, operation: Operation) -> GraphOfOperations:
+    def generate_singleton_graph(self, operation: Operation, preceding_operation: Optional[Operation] = None) -> GraphOfOperations:
         """
-        Generates a graph of operations with a single operation node.
+        Generates a graph of operations with a single operation node and a potential preceding operation (e.g. a noop operation).
         :param operation: operation
+        :param preceding_operation: potential preceding operation (e.g. noop)
         :return: singleton graph of operations
         """
+        if preceding_operation is not None:
+            source = OperationNode.of(preceding_operation)
+            source.append_operation(operation)
+            return GraphOfOperations.from_source(source)
         return GraphOfOperations.from_source(
                 OperationNode.of(operation)
         )

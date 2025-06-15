@@ -1,4 +1,4 @@
-from typing import Sequence, List, Mapping
+from typing import Sequence, List, Mapping, Any
 
 from pure_graph_of_thoughts.api.language_model import Prompt
 from pure_graph_of_thoughts.api.state import State
@@ -117,10 +117,11 @@ def _split_sets(prompt: Prompt, state: State) -> State:
     }
 
 
-def create_simulated_realistic_chat_gpt_intersect_set(seed: int) -> SimulatedLanguageModel:
+def create_simulated_realistic_chat_gpt_intersect_set(seed: int, extra_args: Mapping[str, Any]) -> SimulatedLanguageModel:
     """
     Creates a simulated ChatGPT instance for the task intersect_set.
     :param seed: seed to use for random number generator
+    :param extra_args: extra arguments, ignored for this function
     :return: simulated ChatGPT instance for the task intersect_set
     """
     simulated_chat_gpt = SimulatedLanguageModel(
@@ -144,11 +145,12 @@ def create_simulated_realistic_chat_gpt_intersect_set(seed: int) -> SimulatedLan
     return simulated_chat_gpt
 
 
-def create_simulated_deterministic_chat_gpt_intersect_set(seed: int) -> SimulatedLanguageModel:
+def create_simulated_deterministic_chat_gpt_intersect_set(seed: int, extra_args: Mapping[str, Any]) -> SimulatedLanguageModel:
     """
     Creates a simulated ChatGPT instance for the task intersect_set.
     The probabilities are either 1.0 or 0.0.
     :param seed: seed to use for random number generator
+    :param extra_args: extra arguments, ignored for this function
     :return: simulated ChatGPT instance for the task intersect_set
     """
     simulated_chat_gpt = SimulatedLanguageModel(

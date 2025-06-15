@@ -8,42 +8,123 @@ from pure_graph_of_thoughts.api.operation import PromptOperation, OperationType,
 from pure_graph_of_thoughts.api.state import State
 from pure_graph_of_thoughts.api.task import Evaluator, Task
 
-op_split_4 = PromptOperation(
-    name='split_4',
+
+def validate_op_split(previous_state: State, current_state: State, output_states: Sequence[State]) -> bool:
+    """
+    Checks whether the split operation was performed correctly.
+    :param previous_state: previous state
+    :param current_state: current state
+    :param output_states: output states
+    :return:
+    """
+    min_tolerated_text_ratio = 0.25
+    if 'text' in previous_state and len(output_states) == 2 and all(
+            ['text' in output_state for output_state in output_states]
+    ):
+        previous_text: str = previous_state['text']
+        output_texts: Sequence[str] = [output_state['text'] for output_state in output_states]
+        text_concatenated = ''.join(output_texts).replace(' ', '')
+        lengths = [len(t) for t in output_texts]
+        min_len, max_len = min(lengths), max(lengths)
+        text_ratio = min_len / max_len if max_len > 0 else 0.0
+        return text_concatenated == previous_text.replace(' ', '') and text_ratio >= min_tolerated_text_ratio
+    return False
+
+
+def score_op_split(cumulative_score: float, previous_state: State, current_state: State,
+                   output_states: Sequence[State]) -> float:
+    """
+    Determines the score of the split operation.
+    :param cumulative_score: cumulative score
+    :param previous_state: previous state
+    :param current_state: current state
+    :param output_states: output states
+    :return: score
+    """
+    if cumulative_score < 0.0:
+        return -1.0
+    if validate_op_split(previous_state, current_state, output_states):
+        return 1.0
+    return -1.0
+
+
+op_split = PromptOperation(
+    name='split',
     type=OperationType.GENERATE,
-    output_complexity=relative_complexity(1, 4),
+    output_complexity=relative_complexity(1, 2),
     n_inputs=1,
-    n_outputs=4,
+    n_outputs=2,
     prompt=Prompt(
-        instruction='Split the following text into 4 paragraphs of approximately same length.'
-                    'Output the paragraphs in JSON format.',
+        instruction='Split the given text into two substrings of equal length (number of words).'
+                    'Make sure the number of words is equal for both texts, split exactly in the half of the given text.'
+                    'Output the texts in JSON format.',
         examples=[
             Example(
                 input={
                     'text': 'France and Italy are known for their rich cultural heritage and exquisite cuisine, while Japan offers a blend of ancient tradition and cutting-edge technology. Meanwhile, Italy’s scenic countryside, Brazil’s vibrant festivals and Australia’s stunning landscapes attract travelers from around the world.'
                 },
                 output={
-                    'paragraphs': [
-                        'France and Italy are known for their rich cultural heritage and exquisite cuisine, ',
-                        'while Japan offers a blend of ancient tradition and cutting-edge technology. ',
-                        'Meanwhile, Italy’s scenic countryside, Brazil’s vibrant festivals',
-                        'and Australia’s stunning landscapes attract travelers from around the world.'
+                    'texts': [
+                        'France and Italy are known for their rich cultural heritage and exquisite cuisine, while Japan offers a blend of ancient tradition and cutting-edge',
+                        'technology. Meanwhile, Italy’s scenic countryside, Brazil’s vibrant festivals and Australia’s stunning landscapes attract travelers from around the world.'
                     ]
                 }
             )
         ]
     ),
+    score_operation=ScoreExecOperation(
+        name='score_split',
+        type=OperationType.SCORE,
+        score=score_op_split,
+        n_inputs=1,
+        n_outputs=1
+    ),
     transform_before=lambda states: {
         'text': ''
     } if len(states) == 0 else states[0],
-    transform_after=lambda state: [{'text': state_paragraph} for state_paragraph in state['paragraphs']]
+    transform_after=lambda state: [{'text': state_paragraph} for state_paragraph in state['texts']]
 )
 
-op_merge_4 = PromptOperation(
-    name='merge_4',
+
+def validate_op_merge(previous_state: State, current_state: State, output_states: Sequence[State]) -> bool:
+    """
+    Checks whether the merge operation was performed correctly.
+    :param previous_state: previous state
+    :param current_state: current state
+    :param output_states: output states
+    :return:
+    """
+    if 'counts' in previous_state and 'counts' in current_state:
+        combined: Counter[str] = Counter()
+        for count_dict in previous_state['counts']:
+            if isinstance(count_dict, dict):
+                combined.update(count_dict)
+        return dict(combined) == dict(current_state['counts'])
+    return False
+
+
+def score_op_merge(cumulative_score: float, previous_state: State, current_state: State,
+                   output_states: Sequence[State]) -> float:
+    """
+    Determines the score of the merge operation.
+    :param cumulative_score: cumulative score
+    :param previous_state: previous state
+    :param current_state: current state
+    :param output_states: output states
+    :return: score
+    """
+    if cumulative_score < 0.0:
+        return -1.0
+    if validate_op_merge(previous_state, current_state, output_states):
+        return 1.0
+    return -1.0
+
+
+op_merge = PromptOperation(
+    name='merge',
     type=OperationType.AGGREGATE,
     output_complexity=absolute_complexity(1),
-    n_inputs=4,
+    n_inputs=2,
     n_outputs=1,
     prompt=Prompt(
         instruction='Combine the given dictionaries into a single one. Sum the values to aggregate the number of country occurrences.'
@@ -78,13 +159,20 @@ op_merge_4 = PromptOperation(
             )
         ]
     ),
+    score_operation=ScoreExecOperation(
+        name='score_merge',
+        type=OperationType.SCORE,
+        score=score_op_merge,
+        n_inputs=1,
+        n_outputs=1
+    ),
     transform_before=lambda states: {
         'counts': [
             state['counts'] if 'counts' in state
             else None for state in states
-            #item for item in [
+            # item for item in [
             #
-            #] if item is not None
+            # ] if item is not None
         ]
     }
 )
@@ -99,6 +187,7 @@ op_branch_10 = ExecOperation(
         states[0] for _ in range(10)
     ]
 )
+
 
 def _count_keywords(keywords: Set[str], text: str) -> Mapping[str, int]:
     """
@@ -134,27 +223,29 @@ def count_number_of_count_errors(keywords: Set[str], text: str, current_count: M
     return errors
 
 
-def create_score_op_count(keywords: Set[str]) -> Callable[[float, State, State], float]:
+def create_score_op_count(keywords: Set[str]) -> Callable[[float, State, State, Sequence[State]], float]:
     """
     Creates the score operation for the count operation.
     :param keywords: set of keywords
     :return: score operation for the count operation
     """
 
-    def score_op_count(cumulative_score: float, previous_state: State, current_state: State) -> float:
+    def score_op_count(cumulative_score: float, previous_state: State, current_state: State,
+                       output_states: Sequence[State]) -> float:
         """
         Determines the score of the count operation.
         :param cumulative_score: cumulative score
         :param previous_state: previous state
         :param current_state: current state
+        :param output_states: output states
         :return: score
         """
         if cumulative_score < 0.0:
             return -1.0
-        current_count = current_state['count'] if 'count' in current_state else None
+        current_count = current_state['counts'] if 'counts' in current_state else None
         previous_count = (
             _count_keywords(keywords, previous_state['text']) if 'text' in previous_state
-            else _count_keywords(keywords, ' '.join(previous_state['paragraphs'])) if 'paragraphs' in previous_state
+            else _count_keywords(keywords, ' '.join(previous_state['texts'])) if 'texts' in previous_state
             else None
         )
         if current_count is not None and previous_count is not None and current_count == previous_count:
@@ -192,6 +283,7 @@ def create_op_count(instruction: str, examples: Sequence[Example], keywords: Set
         )
     )
 
+
 def _create_keep_best_from_10(keywords: Set[str]) -> ExecOperation:
     score_op = create_score_op_count(keywords)
     return ExecOperation(
@@ -201,52 +293,19 @@ def _create_keep_best_from_10(keywords: Set[str]) -> ExecOperation:
         n_outputs=1,
         type=OperationType.AGGREGATE,
         execute=lambda states: [
-            max(states, key=lambda state: score_op(0, state, state), default={})
+            max(states, key=lambda state: score_op(0, state, state, states), default={})
         ]
     )
-
 
 
 def create_count_keywords_task(keywords: Set[str], op_count: PromptOperation) -> Task:
     op_keep_best_from_10 = _create_keep_best_from_10(keywords)
     return Task(
-        operations=[op_count, op_split_4, op_merge_4, op_branch_10, op_keep_best_from_10],
+        operations=[op_count, op_split, op_merge, op_branch_10, op_keep_best_from_10],
         evaluator=Evaluator(
             lambda initial_state, state: 'text' in initial_state
-                                         and 'count' in state
-                                         and _count_keywords(keywords, initial_state['text']) == state['count']
+                                         and 'counts' in state
+                                         and _count_keywords(keywords, initial_state['text']) == state['counts']
         )
     )
 
-
-count_demo_keywords = {
-    'France',
-    'Italy',
-    'Japan',
-    'Brazil',
-    'Australia',
-    'Switzerland'
-}
-op_count_demo = create_op_count(
-    instruction='Count the occurrence of countries in the given text.',
-    examples=[
-        Example(
-            input={
-                'text': 'France and Italy are known for their rich cultural heritage and exquisite cuisine, while Japan offers a blend of ancient tradition and cutting-edge technology. Meanwhile, Italy’s scenic countryside, Brazil’s vibrant festivals and Australia’s stunning landscapes attract travelers from around the world.'
-            },
-            output={
-                'count': {
-                    'France': 1,
-                    'Italy': 2,
-                    'Japan': 1,
-                    'Brazil': 1,
-                    'Australia': 1,
-                    'Switzerland': 1
-                }
-            }
-        )
-    ],
-    keywords=count_demo_keywords
-)
-
-count_demo_task = create_count_keywords_task(count_demo_keywords, op_count_demo)

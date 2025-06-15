@@ -1,12 +1,14 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from random import Random
-from typing import Sequence, Set, Callable, Tuple
+from typing import Sequence, Set, Callable, Tuple, Mapping, Any, Optional
 
 from pure_graph_of_thoughts.api.state import State
 from pure_graph_of_thoughts.api.task import Task
+
 from .language_model_simulation_type import LanguageModelSimulationType
 from ..env import GraphStepRewardVersion
 from ..obs import ObservationComponent
+from auto_graph_of_thoughts.experiment.experiment_task_type import ExperimentTaskType
 
 
 @dataclass(frozen=True)
@@ -55,3 +57,9 @@ class ExperimentConfiguration:
 
     generate_init_state: Callable[[Random, Sequence[int], Task], Tuple[int, State]]
     """The initial state generator returning a tuple of complexity and initial state"""
+
+    task_type: Optional[ExperimentTaskType] = field(default=None)
+    """The task type to use, can be derived by the task for most cases"""
+
+    extra_args: Mapping[str, Any] = field(default_factory=dict)
+    """The extra arguments to pass to the language model simulation factory"""

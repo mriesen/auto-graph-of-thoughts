@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "auto-graph-of-thoughts"
 dynamic = ["version"]
 dependencies = [
-    "pure-graph-of-thoughts>=1.0.0,<2.0.0",
+    "pure-graph-of-thoughts>=1.3.0,<2.0.0",
     "gymnasium>=0.29.1,<1.0.0",
     "numpy>=1.26.4,<2.0.0"
 ]
@@ -36,7 +36,7 @@ notebooks = [
     "tensorboard>=2.16.2,<3.0.0",
     "plotly>=5.20.0,<6.0.0",
     "pandas>=2.2.1,<3.0.0",
-    "pure-graph-of-thoughts[visualization,visualization-dot]>=1.1.0,<2.0.0"
+    "pure-graph-of-thoughts[visualization,visualization-dot]>=1.3.0,<2.0.0"
 ]
 
 [tool.hatch.version]
