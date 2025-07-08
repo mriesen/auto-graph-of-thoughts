@@ -24,12 +24,16 @@ _count_keywords_probabilities: Mapping[int, float] = {
 }
 
 _split_text_probabilities: Mapping[int, float] = {
-    50: 0.37,
-    60: 0.44,
-    70: 0.32,
-    80: 0.45,
-    90: 0.42,
-    100: 0.34
+    10: 0.62,
+    20: 0.41,
+    30: 0.75,
+    40: 0.76,
+    50: 0.74,
+    60: 0.76,
+    70: 0.82,
+    80: 0.73,
+    90: 0.85,
+    100: 0.8
 }
 
 
