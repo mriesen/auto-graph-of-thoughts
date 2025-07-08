@@ -199,6 +199,28 @@ class GraphStepReward:
         return -10 + n_ops_penalty
 
 
+    def _calculate_reward_v7(self) -> float:
+        """
+        Reward function with intermediate rewards, depth penalty, invalid signal and complex backtrack action penalty.
+        :return: reward
+        """
+        n_depth_penalty = -(10 / self.max_depth) * self.depth
+        if self._is_invalid:
+            return -10
+        if self.action.type == ActionType.BACKTRACK:
+            if self.prev_scored is not None and not self.prev_scored:
+                return 15
+            return -10
+        if self._score is None:
+            return 10 + n_depth_penalty
+        if self._score:
+            if self._is_final:
+                return 100
+            return 10 + n_depth_penalty
+        if self._is_final:
+            return -20 + n_depth_penalty
+        return -10 + n_depth_penalty
+
 class GraphStepRewardException(Exception):
     """
     An exception that is raised in context of the graph step reward.
