@@ -23,11 +23,15 @@ def validate_op_split(previous_state: State, current_state: State, output_states
     ):
         previous_text: str = previous_state['text']
         output_texts: Sequence[str] = [output_state['text'] for output_state in output_states]
-        text_concatenated = ''.join(output_texts).replace(' ', '')
+        output_text_1, output_text_2 = output_texts[0], output_texts[1]
+        text_concatenated = ''.join([output_text_1, output_text_2]).replace(' ', '')
+        text_concatenated_reversed = ''.join([output_text_2, output_text_1]).replace(' ', '')
         lengths = [len(t) for t in output_texts]
         min_len, max_len = min(lengths), max(lengths)
         text_ratio = min_len / max_len if max_len > 0 else 0.0
-        return text_concatenated == previous_text.replace(' ', '') and text_ratio >= min_tolerated_text_ratio
+        text_equals = text_concatenated == previous_text.replace(' ', '')
+        text_equals_reversed = text_concatenated_reversed == previous_text.replace(' ', '')
+        return (text_equals or text_equals_reversed) and text_ratio >= min_tolerated_text_ratio
     return False
 
 
