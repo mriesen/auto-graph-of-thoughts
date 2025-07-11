@@ -84,6 +84,8 @@ class GraphStepReward:
             return self._calculate_reward_v5()
         if self.version == GraphStepRewardVersion.V6:
             return self._calculate_reward_v6()
+        if self.version == GraphStepRewardVersion.V7:
+            return self._calculate_reward_v7()
         raise GraphStepRewardException(f'Reward version {self.version} is not supported')
 
     def _calculate_reward_v0(self) -> float:
