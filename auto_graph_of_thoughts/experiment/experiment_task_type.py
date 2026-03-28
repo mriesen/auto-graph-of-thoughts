@@ -17,6 +17,8 @@ class ExperimentTaskType(Enum):
     SUM_LIST = 'sum_list'
     SORT_LIST = 'sort_list'
     INTERSECT_SET = 'intersect_set'
+    MERGE_DOCS = 'merge-docs'
+    COUNT_KEYWORDS = 'count_keywords'
 
     @classmethod
     def from_task(cls, task: Task) -> ExperimentTaskType:

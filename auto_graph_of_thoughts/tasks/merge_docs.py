@@ -14,7 +14,7 @@ _rougeL_scorer = _rouge_module.RougeScorer(['rougeL'], use_stemmer=True)
 _rouge1_scorer = _rouge_module.RougeScorer(['rouge1'], use_stemmer=True)
 
 MergeDocsScorer = Callable[[float, State, State, Sequence[State]], float]
-
+ComparingMergeDocsScorer = Callable[[State, Sequence[State]], float]
 
 def _compute_retention_score(source_documents: Sequence[str], merged: str) -> float:
     """
@@ -139,7 +139,7 @@ _MERGE_PROMPT = Prompt(
 
 _IMPROVE_PROMPT = Prompt(
     instruction=(
-        'You are given a set of source documents and an existing merged document. '
+        'You are given an existing merged document. '
         'Improve the merged document by adding any information from the source documents that is missing '
         'and by reducing any redundancy. '
         'Output only the improved document in JSON format with a single "merged" key.'
@@ -147,14 +147,10 @@ _IMPROVE_PROMPT = Prompt(
     examples=[
         Example(
             input={
-                'documents': [
-                    'Party A agrees not to disclose any confidential information received from Party B.',
-                    'Party B shall not share any trade secrets of Party A with third parties.',
-                    'Violations of this agreement may result in legal action.'
-                ],
                 'merged': (
-                    'Both parties agree not to disclose or share each other\'s '
-                    'confidential information and trade secrets with any third parties.'
+                    'Party A agrees not to disclose any confidential information received from Party B.'
+                    'Party B shall not share any trade secrets of Party A with third parties.'
+                    'Violations of this agreement may result in legal action.'
                 )
             },
             output={
@@ -180,7 +176,7 @@ def create_op_merge(score: MergeDocsScorer = score_op_merge_docs) -> PromptOpera
         n_inputs=1,
         n_outputs=1,
         type=OperationType.GENERATE,
-        output_complexity=relative_complexity(1),
+        output_complexity=absolute_complexity(1),
         prompt=_MERGE_PROMPT,
         transform_before=lambda states: {
             'documents': states[0].get('documents', [])
@@ -206,12 +202,11 @@ def create_op_improve(score: MergeDocsScorer = score_op_merge_docs) -> PromptOpe
         n_inputs=1,
         n_outputs=1,
         type=OperationType.GENERATE,
-        output_complexity=relative_complexity(1),
+        output_complexity=absolute_complexity(1),
         prompt=_IMPROVE_PROMPT,
         transform_before=lambda states: {
-            'documents': states[0].get('documents', []),
             'merged': states[0].get('merged', '')
-        } if states else {'documents': [], 'merged': ''},
+        } if states else {'merged': ''},
         score_operation=ScoreExecOperation(
             name='score_merge_docs',
             type=OperationType.SCORE,
@@ -222,21 +217,40 @@ def create_op_improve(score: MergeDocsScorer = score_op_merge_docs) -> PromptOpe
     )
 
 
-def create_merge_docs_task(score: Optional[MergeDocsScorer] = None) -> Task:
+def create_op_keep_best_from_5(score: ComparingMergeDocsScorer = _score_state_against_others) -> ExecOperation:
+    """
+    Creates the keep best from 5 operation for the merge_docs task.
+    :param score: scoring function; defaults to the ROUGE-L F1 based scorer
+    :return: improve PromptOperation
+    """
+    return ExecOperation(
+        name='keep_best_from_5',
+        n_inputs=5,
+        n_outputs=1,
+        type=OperationType.AGGREGATE,
+        output_complexity=relative_complexity(1),
+        execute=lambda states: [max(states, key=lambda s: score(s, states), default={})]
+    )
+
+
+def create_merge_docs_task(score: Optional[MergeDocsScorer] = None, comparing_score: Optional[ComparingMergeDocsScorer] = None) -> Task:
     """
     Creates the merge_docs task, optionally with a custom scoring function.
-    :param score: scoring function for op_merge and op_improve; defaults to the ROUGE-L F1 based scorer
+    :param comparing_score: scoring function for comparison, used for keep_best_from_5, defaults to comparison against others
+    :param score: scoring function for op_merge and op_improve, defaults to the ROUGE-L F1 based scorer
     :return: merge_docs Task
     """
     actual_score = score if score is not None else score_op_merge_docs
+    actual_comparing_score = comparing_score if comparing_score is not None else _score_state_against_others
     op_merge_inst = create_op_merge(actual_score)
     op_improve_inst = create_op_improve(actual_score)
+    op_keep_best_from_5_inst = create_op_keep_best_from_5(actual_comparing_score)
     return Task(
         operations=[
             op_merge_inst,
             op_improve_inst,
             op_branch_5,
-            op_keep_best_from_5
+            op_keep_best_from_5_inst
         ],
         evaluator=Evaluator(
             lambda initial_state, state: (
@@ -247,15 +261,6 @@ def create_merge_docs_task(score: Optional[MergeDocsScorer] = None) -> Task:
         )
     )
 
-
-op_keep_best_from_5 = ExecOperation(
-    name='keep_best_from_5',
-    n_inputs=5,
-    n_outputs=1,
-    type=OperationType.AGGREGATE,
-    output_complexity=absolute_complexity(1),
-    execute=lambda states: [max(states, key=lambda s: _score_state_against_others(s, states), default={})]
-)
 
 op_branch_5 = ExecOperation(
     name='branch_5',
@@ -268,4 +273,6 @@ op_branch_5 = ExecOperation(
 
 op_merge = create_op_merge()
 op_improve = create_op_improve()
+op_keep_best_from_5 = create_op_keep_best_from_5()
+
 merge_docs_task = create_merge_docs_task()

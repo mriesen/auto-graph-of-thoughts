@@ -38,9 +38,10 @@ def _get_merge_docs_probability(prompt: Prompt, state: State) -> float:
 
 
 def _improve_docs_correctly(prompt: Prompt, state: State) -> State:
+    merged: str = state.get('merged', '')
+    if merged:
+        return {'merged': merged}
     documents: List[str] = state.get('documents', [])
-    if not documents:
-        return {'merged': state.get('merged', '')}
     return {'merged': ' '.join(documents)}
 
 
@@ -50,7 +51,8 @@ def _improve_docs_incorrectly(prompt: Prompt, state: State) -> State:
 
 def _get_improve_docs_probability(prompt: Prompt, state: State) -> float:
     documents: List[str] = state.get('documents', [])
-    cardinality = len(documents)
+    merged: List[str] = [state.get('merged', '')]
+    cardinality = max(len(merged), len(documents))
     if cardinality in _improve_docs_probabilities:
         return _improve_docs_probabilities[cardinality]
     return 0.0

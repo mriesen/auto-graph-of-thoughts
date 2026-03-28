@@ -8,6 +8,8 @@ from ..language_model.simulated_chat_gpt_count_keywords import create_simulated_
     create_simulated_deterministic_chat_gpt_count_keywords
 from ..language_model.simulated_chat_gpt_intersect_set import create_simulated_realistic_chat_gpt_intersect_set, \
     create_simulated_deterministic_chat_gpt_intersect_set
+from ..language_model.simulated_chat_gpt_merge_docs import create_simulated_realistic_chat_gpt_merge_docs, \
+    create_simulated_deterministic_chat_gpt_merge_docs
 from ..language_model.simulated_chat_gpt_sort_list import create_simulated_realistic_chat_gpt_sort_list, \
     create_simulated_deterministic_chat_gpt_sort_list
 from auto_graph_of_thoughts.experiment.experiment_task_type import ExperimentTaskType
@@ -50,6 +52,12 @@ class LanguageModelSimulationType(Enum):
                 return create_simulated_realistic_chat_gpt_count_keywords
             elif self == LanguageModelSimulationType.DETERMINISTIC:
                 return create_simulated_deterministic_chat_gpt_count_keywords
+
+        if task_type == ExperimentTaskType.MERGE_DOCS:
+            if self == LanguageModelSimulationType.REALISTIC:
+                return create_simulated_realistic_chat_gpt_merge_docs
+            elif self == LanguageModelSimulationType.DETERMINISTIC:
+                return create_simulated_deterministic_chat_gpt_merge_docs
 
         raise
 
