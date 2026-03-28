@@ -1,3 +1,5 @@
+import json
+import logging
 from typing import List, Optional, Callable
 
 from pure_graph_of_thoughts.api.graph.operation import GraphOfOperations
@@ -61,4 +63,12 @@ class InputOutputBaselineStrategy(BaselineStrategy):
 
     def _generate_single(self, iteration: int) -> BaselineIterationResult:
         graph_of_operations: GraphOfOperations = self._graph_generator.generate_singleton_graph(self._operation, self._preceding_operation)
-        return self._evaluate_graph(graph_of_operations, iteration)
+        for attempt in range(16):
+            try:
+                return self._evaluate_graph(graph_of_operations, iteration)
+            except Exception as e:
+                if isinstance(e, json.JSONDecodeError) or isinstance(e.__cause__, json.JSONDecodeError):
+                    logging.warning("JSONDecodeError during evaluation, retrying iteration %d (attempt %d/16)...", iteration, attempt + 1)
+                    continue
+                raise
+        raise RuntimeError(f"Evaluation failed after 16 retries due to JSONDecodeError (iteration {iteration})")
