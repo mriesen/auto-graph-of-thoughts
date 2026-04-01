@@ -7,6 +7,7 @@ from ..env import GraphOfThoughtsEnv
 from ..env.wrapper import DictObsFilterWrapper
 from auto_graph_of_thoughts.experiment.experiment_task_type import ExperimentTaskType
 
+_LANGUAGE_MODEL_SEED_SHIFT = 100_0000
 
 class Experiment:
     """
@@ -23,21 +24,23 @@ class Experiment:
     def __init__(self, config: ExperimentConfiguration) -> None:
         self._config = config
 
-    def create_unwrapped_train_env(self) -> GraphOfThoughtsEnv:
+    def create_unwrapped_train_env(self, i: int = 0) -> GraphOfThoughtsEnv:
         """
         Creates an unwrapped training environment.
+        :param i: index of the current env
         :return: unwrapped training environment
         """
-        controller = self._create_controller(self._config, self._config.train_complexities)
-        return self._create_env(self._config, controller)
+        controller = self._create_controller(self._config, self._config.train_complexities, i)
+        return self._create_env(self._config, controller, i)
 
-    def create_filtered_train_env(self) -> DictObsFilterWrapper:
+    def create_filtered_train_env(self, i: int = 0) -> DictObsFilterWrapper:
         """
         Creates a filtered train environment.
+        :param i: index of the current env
         :return: filtered train environment
         """
-        controller = self._create_controller(self._config, self._config.train_complexities)
-        env = self._create_env(self._config, controller)
+        controller = self._create_controller(self._config, self._config.train_complexities, i)
+        env = self._create_env(self._config, controller, i)
         return self._create_filtered_env(self._config, env)
 
     def created_eval_env_tuple(
@@ -55,11 +58,11 @@ class Experiment:
         return env, self._create_filtered_env(self._config, env)
 
     @staticmethod
-    def _create_controller(config: ExperimentConfiguration, complexities: Sequence[int]) -> ContinuousGraphController:
+    def _create_controller(config: ExperimentConfiguration, complexities: Sequence[int], i: int = 0) -> ContinuousGraphController:
         task_type = config.task_type if config.task_type is not None else ExperimentTaskType.from_task(config.task)
         factory_function = config.lm_simulation_type.get_factory_function(task_type)
-        language_model = factory_function(config.seed, config.extra_args)
-        rnd = Random(config.seed)
+        language_model = factory_function(config.seed + _LANGUAGE_MODEL_SEED_SHIFT + i, config.extra_args)
+        rnd = Random(config.seed + i)
         return ContinuousGraphController(
                 language_model=language_model,
                 generate_init_state=lambda: config.generate_init_state(rnd, complexities, config.task),
@@ -71,11 +74,11 @@ class Experiment:
         )
 
     @staticmethod
-    def _create_env(config: ExperimentConfiguration, controller: ContinuousGraphController) -> GraphOfThoughtsEnv:
+    def _create_env(config: ExperimentConfiguration, controller: ContinuousGraphController, i: int  = 0) -> GraphOfThoughtsEnv:
         return GraphOfThoughtsEnv(
                 config.task,
                 controller,
-                seed=config.seed,
+                seed=config.seed + i,
                 reward_version=config.reward_version,
                 max_steps=config.max_steps
         )
