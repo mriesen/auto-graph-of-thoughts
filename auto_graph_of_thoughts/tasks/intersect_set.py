@@ -15,85 +15,6 @@ op_noop = ExecOperation(
     execute=lambda states: states
 )
 
-op_split = PromptOperation(
-        name='split',
-        n_outputs=2,
-        n_inputs=1,
-        type=OperationType.GENERATE,
-        output_complexity=relative_complexity(1, 2),
-        prompt=Prompt(
-                instruction='Split the given sets into two subsets each of equal size. '
-                            'Count the number of elements in the set before deciding where to split.'
-                            'Only output the sets in JSON format as the examples show.',
-                examples=[
-                    Example(
-                            input={
-                                'set1': [8, 2, 0, 1],
-                                'set2': [1, 4, 8, 3],
-                            },
-                            output={
-                                'sets1': [
-                                    [8, 2],
-                                    [0, 1]
-                                ],
-                                'sets2': [
-                                    [1, 4],
-                                    [8, 3]
-                                ]
-                            }
-                    )
-                ],
-        ),
-        transform_before=lambda states: {
-            'set1': [],
-            'set2': [],
-        } if len(states) == 0 else states[0],
-        transform_after=lambda state: [
-            {
-                'set1': state['sets1'][i] if 'sets1' in state else [],
-                'set2': state['sets2'][i] if 'sets2' in state else [],
-            } for i in range(2)
-        ]
-)
-
-op_merge = PromptOperation(
-        name='merge',
-        n_outputs=1,
-        n_inputs=2,
-        type=OperationType.AGGREGATE,
-        output_complexity=relative_complexity(2),
-        prompt=Prompt(
-                instruction='For each top-level sets list, combine the given sets to a single set. '
-                            'Only output the set in JSON format as the examples show.',
-                examples=[
-                    Example(
-                            input={
-                                'sets1': [
-                                    [8, 2],
-                                    [0, 1]
-                                ],
-                                'sets2': [
-                                    [1, 4],
-                                    [8, 3]
-                                ]
-                            },
-                            output={
-                                'set1': [8, 2, 0, 1],
-                                'set2': [1, 4, 8, 3],
-                            }
-                    )
-                ]
-        ),
-        transform_before=lambda states: {
-            'sets1': [
-                state['set1'] if 'set1' in state else [] for state in states
-            ],
-            'sets2': [
-                state['set2'] if 'set2' in state else [] for state in states
-            ]
-        }
-)
-
 
 def count_number_of_intersect_errors(
         initial_set1: Set[int], initial_set2: Set[int], current_intersection: Set[int]
@@ -122,7 +43,7 @@ def _get_previous_sets(previous_state: State) -> Optional[Set[int]]:
             and previous_state['set2'] is not None
     ):
         return set(previous_state['set1']).intersection(
-                set(previous_state['set2'])
+            set(previous_state['set2'])
         )
     if 'sets1' in previous_state and 'sets2' in previous_state:
         return {
@@ -133,7 +54,8 @@ def _get_previous_sets(previous_state: State) -> Optional[Set[int]]:
     return None
 
 
-def score_op_intersect(cumulative_score: float, previous_state: State, current_state: State, output_states: Sequence[State]) -> float:
+def score_op_intersect(cumulative_score: float, previous_state: State, current_state: State,
+                       output_states: Sequence[State]) -> float:
     """
     Determines the score of the intersection operation.
     :param cumulative_score: cumulative score
@@ -154,39 +76,71 @@ def score_op_intersect(cumulative_score: float, previous_state: State, current_s
 
 
 op_intersect = PromptOperation(
-        name='intersect',
-        type=OperationType.GENERATE,
+    name='intersect',
+    type=OperationType.GENERATE,
+    n_inputs=1,
+    n_outputs=1,
+    output_complexity=relative_complexity(1),
+    prompt=Prompt(
+        instruction='Find the intersection of two given sets of integers.'
+                    'Output only the numbers that are present in both input sets in JSON format.',
+        examples=[
+            Example(
+                input={
+                    'set1': [1, 5, 8, 2],
+                    'set2': [2, 4, 5, 9],
+                },
+                output={
+                    'intersection': [2, 5]
+                }
+            )
+        ]
+    ),
+    transform_before=lambda states: {
+        'set1': [],
+        'set2': []
+    } if len(states) == 0 else states[0],
+    score_operation=ScoreExecOperation(
+        name='score',
+        type=OperationType.SCORE,
+        score=score_op_intersect,
         n_inputs=1,
-        n_outputs=1,
-        output_complexity=relative_complexity(1),
-        prompt=Prompt(
-                instruction='Find the intersection of two given sets of integers.'
-                            'Output only the numbers that are present in both input sets in JSON format.',
-                examples=[
-                    Example(
-                            input={
-                                'set1': [1, 5, 8, 2],
-                                'set2': [2, 4, 5, 9],
-                            },
-                            output={
-                                'intersection': [2, 5]
-                            }
-                    )
-                ]
-        ),
-        transform_before=lambda states: {
-            'set1': [],
-            'set2': []
-        } if len(states) == 0 else states[0],
-        score_operation=ScoreExecOperation(
-                name='score',
-                type=OperationType.SCORE,
-                score=score_op_intersect,
-                n_inputs=1,
-                n_outputs=1
-        )
+        n_outputs=1
+    )
 )
 
+op_split_set = ExecOperation(
+    name='split_set',
+    n_inputs=1,
+    n_outputs=2,
+    type=OperationType.GENERATE,
+    output_complexity=relative_complexity(1, 2),
+    execute=lambda states: [
+        {
+            'set1': states[0].get('set1', [])[:len(states[0].get('set1', [])) // 2],
+            'set2': states[0].get('set2', []),
+        },
+        {
+            'set1': states[0].get('set1', [])[len(states[0].get('set1', [])) // 2:],
+            'set2': states[0].get('set2', []),
+        }
+    ]
+)
+
+op_union = ExecOperation(
+    name='union',
+    n_inputs=2,
+    n_outputs=1,
+    type=OperationType.AGGREGATE,
+    output_complexity=relative_complexity(2),
+    execute=lambda states: [
+        {
+            'intersection': list(
+                set(states[0].get('intersection', [])) | set(states[1].get('intersection', []))
+            )
+        }
+    ]
+)
 
 op_branch_5 = ExecOperation(
     name='branch_5',
@@ -211,11 +165,11 @@ op_keep_best_from_5 = ExecOperation(
 )
 
 intersect_set_task = Task(
-        operations=[op_intersect, op_branch_5, op_keep_best_from_5],
-        evaluator=Evaluator(
-                lambda initial_state, state: 'set1' in initial_state and 'set2' in initial_state
-                                             and 'intersection' in state
-                                             and set(initial_state['set1'])
-                                             .intersection(set(initial_state['set2'])) == set(state['intersection'])
-        )
+    operations=[op_intersect, op_split_set, op_union, op_branch_5, op_keep_best_from_5],
+    evaluator=Evaluator(
+        lambda initial_state, state: 'set1' in initial_state and 'set2' in initial_state
+                                     and 'intersection' in state
+                                     and set(initial_state['set1'])
+                                     .intersection(set(initial_state['set2'])) == set(state['intersection'])
+    )
 )
