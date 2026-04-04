@@ -1,6 +1,6 @@
 from typing import Mapping
-import plotly.express as px
-import pandas as pd
+import plotly.express as px # type: ignore[import-untyped]
+import pandas as pd # type: ignore[import-untyped]
 
 _COLOR_VALID = '#6acc64'
 

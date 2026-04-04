@@ -1,7 +1,7 @@
 import re
 from typing import Sequence, List, Callable, Optional
 
-from rouge_score import rouge_scorer as _rouge_module
+from rouge_score import rouge_scorer as _rouge_module # type: ignore[import-untyped]
 
 from pure_graph_of_thoughts.api.language_model import Prompt, Example
 from pure_graph_of_thoughts.api.operation import PromptOperation, OperationType, relative_complexity, \
@@ -10,8 +10,8 @@ from pure_graph_of_thoughts.api.state import State
 from pure_graph_of_thoughts.api.task import Task, Evaluator
 
 # Shared ROUGE scorer instance (ROUGE-L for retention, ROUGE-1 for redundancy).
-_rougeL_scorer = _rouge_module.RougeScorer(['rougeL'], use_stemmer=True)
-_rouge1_scorer = _rouge_module.RougeScorer(['rouge1'], use_stemmer=True)
+_rougeL_scorer = _rouge_module.RougeScorer(['rougeL'], use_stemmer=True) # type: ignore[import-untyped]
+_rouge1_scorer = _rouge_module.RougeScorer(['rouge1'], use_stemmer=True) # type: ignore[import-untyped]
 
 MergeDocsScorer = Callable[[float, State, State, Sequence[State]], float]
 ComparingMergeDocsScorer = Callable[[State, Sequence[State]], float]
@@ -28,7 +28,7 @@ def _compute_retention_score(source_documents: Sequence[str], merged: str) -> fl
     reference = ' '.join(source_documents)
     if not reference or not merged:
         return 0.0
-    return _rougeL_scorer.score(reference, merged)['rougeL'].fmeasure
+    return _rougeL_scorer.score(reference, merged)['rougeL'].fmeasure # type: ignore
 
 
 def _compute_non_redundancy_score(merged: str) -> float:

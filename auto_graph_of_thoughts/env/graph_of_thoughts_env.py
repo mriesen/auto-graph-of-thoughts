@@ -20,7 +20,7 @@ from ..obs import ObservationComponent
 from ..space import MultiSpace, OrdinalDiscreteSpace, OptionalBoolSpace, MultiDiscreteSpace
 
 ObsType = Mapping[str, Any]
-ActType = np.int64
+ActType = np.int64 | np.intp | np.ndarray[Any, Any]
 
 DEFAULT_ACTION_LOOKBACK = 4
 DEFAULT_MAX_STEPS = 100
@@ -345,7 +345,7 @@ class GraphOfThoughtsEnv(Env[ObsType, ActType]):
         operations: Sequence[Operation] = self._task.operations
         return operations[encoded_operation]
 
-    def decode_action(self, encoded_action: np.int64) -> LayerAction:
+    def decode_action(self, encoded_action: np.int64 | np.intp | np.ndarray[Any, Any]) -> LayerAction:
         """
         Decodes an encoded action
         :param encoded_action: action to decode

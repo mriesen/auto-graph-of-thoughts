@@ -1,11 +1,13 @@
 from random import Random
 
+from gymnasium import Env
 from pure_graph_of_thoughts.api.state import State
 from pure_graph_of_thoughts.api.task import Task
 
 from typing import Callable, Sequence, Mapping, Any, Optional, Tuple
 
 from stable_baselines3.common.utils import set_random_seed
+from stable_baselines3.common.vec_env import VecEnv
 
 from ..env import GraphObservationComponent
 from ..env.create_vec_env import create_vec_env
@@ -96,7 +98,9 @@ def train_agent(
 
     set_random_seed(seed)
     model.learn(total_timesteps=TRAIN_N_TIMESTEPS, tb_log_name=model_name)
-    mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=EVAL_N_EPISODES)
+    eval_env = model.get_env()
+    assert eval_env is not None
+    mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=EVAL_N_EPISODES)
     print(f'Mean reward: {mean_reward} +/- {std_reward}')
     model.save(f'{artifacts_base_dir}/{MODELS_DIR}/{model_name}')
 
@@ -104,7 +108,7 @@ def train_agent(
         experiment,
         model_name,
         EVAL_N_EPISODES,
-        lambda obs: model.predict(obs)[0]
+        lambda obs: model.predict(obs)[0] # type: ignore[arg-type]
     )
     store_evaluation_summary(f'{artifacts_base_dir}/{RESULTS_DIR}', evaluation.summary)
 

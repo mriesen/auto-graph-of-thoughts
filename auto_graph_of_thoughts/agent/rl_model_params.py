@@ -6,14 +6,14 @@ POLICY_KWARGS = dict(
     net_arch=dict(pi=[64, 64], vf=[64, 64])
 )
 
-def clip_range_schedule(cr_start, cr_end) -> Callable[[float], float]:
+def clip_range_schedule(cr_start: float, cr_end: float) -> Callable[[float], float]:
     return lambda progress: cr_end + progress * (cr_start - cr_end)
 
 CLIP_RANGE = clip_range_schedule(0.15, 0.3)
 ENT_COEF = 0.03
 N_EPOCHS = 8
 
-def lr_schedule(lr_start, lr_end, warmup_fraction) -> Callable[[float], float]:
+def lr_schedule(lr_start: float, lr_end: float, warmup_fraction: float) -> Callable[[float], float]:
     return lambda progress: (
         lr_end + ((1.0 - progress) / warmup_fraction) * (lr_start - lr_end)
         if (1.0 - progress) < warmup_fraction
