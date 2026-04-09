@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "auto-graph-of-thoughts"
 dynamic = ["version"]
 dependencies = [
-    "pure-graph-of-thoughts>=1.4.0,<2.0.0",
+    "pure-graph-of-thoughts[languagemodel]>=1.5.0,<2.0.0",
     "gymnasium>=0.29.1,<1.0.0",
     "numpy>=1.26.4,<2.0.0",
     "rouge-score>=0.1.2,<1.0.0",
@@ -37,7 +37,7 @@ classifiers = [
 notebooks = [
     "jupyter>=1.1.0,<2.0.0",
     "tensorboard>=2.16.2,<3.0.0",
-    "pure-graph-of-thoughts[visualization,visualization-dot]>=1.4.0,<2.0.0"
+    "pure-graph-of-thoughts[languagemodel,visualization,visualization-dot]>=1.5.0,<2.0.0"
 ]
 
 [tool.hatch.version]
