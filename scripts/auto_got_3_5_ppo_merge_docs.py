@@ -1,5 +1,5 @@
 #%% md
-# # Automated Graph of Thoughts - PPO - Task Merge Docs
+# # Reinforced Graph of Thoughts - PPO - Task Merge Docs
 #%%
 import argparse
 from typing import Sequence
@@ -7,8 +7,8 @@ from typing import Sequence
 import pandas as pd
 from pure_graph_of_thoughts.api.state import State
 
-from auto_graph_of_thoughts.experiment.experiment_task_type import ExperimentTaskType
-from auto_graph_of_thoughts.tasks.merge_docs import create_merge_docs_task
+from reinforced_graph_of_thoughts.experiment.experiment_task_type import ExperimentTaskType
+from reinforced_graph_of_thoughts.tasks.merge_docs import create_merge_docs_task
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, required=True)
@@ -32,8 +32,8 @@ def score_compare_has_content(state: State, _: Sequence[State]) -> float:
 
 merge_docs_task = create_merge_docs_task(score=score_has_content, comparing_score=score_compare_has_content)
 #%%
-from auto_graph_of_thoughts.agent.train_agent import train_agent
-from auto_graph_of_thoughts.experiment.generate_init_state_merge_docs import create_generate_init_state_merge_docs
+from reinforced_graph_of_thoughts.agent.train_agent import train_agent
+from reinforced_graph_of_thoughts.experiment.generate_init_state_merge_docs import create_generate_init_state_merge_docs
 
 TASK_NAME = 'merge_docs'
 

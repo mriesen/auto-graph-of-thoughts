@@ -1,11 +1,11 @@
 #%% md
-# # Automated Graph of Thoughts - PPO - Task Sort List
+# # Reinforced Graph of Thoughts - PPO - Task Sort List
 #%%
 import argparse
 
-from auto_graph_of_thoughts.agent.train_agent import train_agent
-from auto_graph_of_thoughts.experiment import generate_init_state_sort_list
-from auto_graph_of_thoughts.tasks.sort_list import sort_list_task
+from reinforced_graph_of_thoughts.agent.train_agent import train_agent
+from reinforced_graph_of_thoughts.experiment import generate_init_state_sort_list
+from reinforced_graph_of_thoughts.tasks.sort_list import sort_list_task
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, required=True)

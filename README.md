@@ -1,5 +1,5 @@
-# Automated Graph of Thoughts
-This is the official implementation of Automated Graph of Thoughts.
+# Reinforced Graph of Thoughts
+This is the official implementation of Reinforced Graph of Thoughts.
 
 ## Setup Guide
 To run this code, Python `3.11` or newer is required.

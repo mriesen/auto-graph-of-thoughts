@@ -1,0 +1,29 @@
+from random import Random
+from typing import Sequence, Tuple
+
+from pure_graph_of_thoughts.api.state import State
+from pure_graph_of_thoughts.api.task import Task
+
+
+def generate_init_state_intersect_set(rnd: Random, complexities: Sequence[int], task: Task) -> Tuple[int, State]:
+    """
+    Generates an initial state based on the given random number generator and complexities.
+    :param task: task
+    :param rnd: random number generator
+    :param complexities: complexities
+    :return:
+    """
+    complexity = rnd.choice(complexities)
+    init_state: State = {
+        'set1': list(
+            set(
+                rnd.sample(range(0, complexity), complexity)
+            )
+        ),
+        'set2': list(
+            set(
+                rnd.sample(range(0, complexity), complexity)
+            )
+        )
+    }
+    return complexity, init_state

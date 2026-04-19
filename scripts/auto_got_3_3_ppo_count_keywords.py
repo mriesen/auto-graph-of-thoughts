@@ -1,13 +1,13 @@
 #%% md
-# # Automated Graph of Thoughts - PPO - Task Count Keywords
+# # Reinforced Graph of Thoughts - PPO - Task Count Keywords
 #%%
 import argparse
 
 import pandas as pd
 from pure_graph_of_thoughts.api.language_model import Example
 
-from auto_graph_of_thoughts.experiment.experiment_task_type import ExperimentTaskType
-from auto_graph_of_thoughts.tasks.count_keywords import create_count_keywords_task, create_op_count
+from reinforced_graph_of_thoughts.experiment.experiment_task_type import ExperimentTaskType
+from reinforced_graph_of_thoughts.tasks.count_keywords import create_count_keywords_task, create_op_count
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, required=True)
@@ -50,8 +50,8 @@ op_count_keywords = create_op_count(
 )
 count_keywords_task = create_count_keywords_task(keywords, op_count_keywords)
 #%%
-from auto_graph_of_thoughts.agent.train_agent import train_agent
-from auto_graph_of_thoughts.experiment import create_generate_init_state_count_keywords
+from reinforced_graph_of_thoughts.agent.train_agent import train_agent
+from reinforced_graph_of_thoughts.experiment import create_generate_init_state_count_keywords
 
 TASK_NAME = 'count_keywords'
 

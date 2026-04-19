@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "auto-graph-of-thoughts"
+name = "reinforced-graph-of-thoughts"
 dynamic = ["version"]
 dependencies = [
     "pure-graph-of-thoughts[languagemodel]>=1.6.0,<2.0.0",
@@ -22,7 +22,7 @@ authors = [
 maintainers = [
     { name = "Manuel Riesen", email = "manuel.riesen0@gmail.com" }
 ]
-description = "Automated Graph of Thoughts"
+description = "Reinforced Graph of Thoughts"
 readme = "README.md"
 license-files = ["LICENSE"]
 classifiers = [
@@ -44,7 +44,7 @@ notebooks = [
 path = "__about__.py"
 
 [tool.coverage.paths]
-auto_graph_of_thoughts = ["auto_graph_of_thoughts"]
+reinforced_graph_of_thoughts = ["reinforced_graph_of_thoughts"]
 
 [tool.hatch.envs.types]
 dependencies = [
@@ -52,7 +52,7 @@ dependencies = [
 ]
 
 [tool.hatch.envs.types.scripts]
-check = "mypy --install-types --non-interactive {args:auto_graph_of_thoughts}"
+check = "mypy --install-types --non-interactive {args:reinforced_graph_of_thoughts}"
 
 [tool.hatch.build.targets.sdist]
 exclude = [
@@ -62,7 +62,7 @@ exclude = [
 
 [tool.hatch.build.targets.wheel]
 packages = [
-    "auto_graph_of_thoughts"
+    "reinforced_graph_of_thoughts"
 ]
 
 [tool.mypy]
